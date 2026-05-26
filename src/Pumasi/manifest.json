@@ -1,0 +1,10 @@
+{
+  "Name": "pumasi",
+  "Author": "p3ckolim + Codex",
+  "Version": "0.1.0",
+  "Description": "pumasi (품앗이): host-authoritative AI helper NPC for Stardew Valley multiplayer farm chores.",
+  "UniqueID": "P3ckolim.PMS",
+  "EntryDll": "Pumasi.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
