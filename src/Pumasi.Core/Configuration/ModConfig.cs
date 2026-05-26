@@ -5,6 +5,7 @@ public sealed class ModConfig
     public AssistantConfig Assistant { get; set; } = new();
     public GeminiConfig Gemini { get; set; } = new();
     public UiConfig Ui { get; set; } = new();
+    public WikiAnswerConfig WikiAnswers { get; set; } = new();
 
     public SharedConfigSnapshot ToSharedSnapshot()
     {

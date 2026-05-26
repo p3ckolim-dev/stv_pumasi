@@ -1,5 +1,6 @@
 using Pumasi.Core.Ai;
 using Pumasi.Core.Configuration;
+using Pumasi.Core.Knowledge;
 using Pumasi.Core.Tasks;
 using Pumasi.Game;
 using Pumasi.Multiplayer;
@@ -22,7 +23,9 @@ public sealed class ModEntry : Mod
     private MultiplayerSyncService multiplayer = null!;
     private TodoOverlay overlay = null!;
     private HttpClient httpClient = null!;
+    private WikiMemoryCache wikiCache = null!;
     private int executionCooldownTicks;
+    private DateTimeOffset lastWikiQuestionAt = DateTimeOffset.MinValue;
 
     public override void Entry(IModHelper helper)
     {
@@ -33,6 +36,7 @@ public sealed class ModEntry : Mod
         executor = new FarmTaskExecutor(helperState);
         overlay = new TodoOverlay { Visible = configService.Config.Ui.ShowTodoOverlay };
         httpClient = new HttpClient();
+        wikiCache = new WikiMemoryCache();
         multiplayer = new MultiplayerSyncService(helper, Monitor, ModManifest, HandleGuestCommand);
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
@@ -44,7 +48,7 @@ public sealed class ModEntry : Mod
 
         helper.ConsoleCommands.Add("pms_status", "Show pumasi (품앗이) status.", OnStatusCommand);
         helper.ConsoleCommands.Add("pms_scan", "Host only: scan farm tasks and enqueue safe todos.", OnScanCommand);
-        helper.ConsoleCommands.Add("pms_ask", "Host only: ask Gemini to plan from current scan candidates. Usage: pms_ask <instruction>", OnAskCommand);
+        helper.ConsoleCommands.Add("pms_ask", "Ask pumasi to answer a wiki question or plan safe farm work. Usage: pms_ask <instruction>", OnAskCommand);
         helper.ConsoleCommands.Add("pms_key", "Host local only: set Gemini API key. Usage: pms_key <key>", OnApiKeyCommand);
         helper.ConsoleCommands.Add("pms_todo", "Show current todo list in the SMAPI console.", OnTodoCommand);
     }
@@ -120,7 +124,7 @@ public sealed class ModEntry : Mod
     {
         var instruction = args.Length == 0 ? "Plan safe farm chores." : string.Join(" ", args);
         if (Context.IsMainPlayer)
-            _ = PlanWithGeminiAsync(instruction);
+            _ = HandleAskAsync(instruction);
         else
             multiplayer.SendGuestCommand(instruction);
     }
@@ -229,6 +233,139 @@ public sealed class ModEntry : Mod
         }
     }
 
+    private async Task HandleAskAsync(string instruction)
+    {
+        var classifier = new KnowledgeIntentClassifier();
+        switch (classifier.Classify(instruction))
+        {
+            case KnowledgeIntent.TaskPlanning:
+                await PlanWithGeminiAsync(instruction).ConfigureAwait(false);
+                break;
+
+            case KnowledgeIntent.WikiAnswer:
+                await AnswerWithWikiAsync(instruction).ConfigureAwait(false);
+                break;
+
+            case KnowledgeIntent.Ambiguous:
+            default:
+                PublishHelperAnswer("작업으로 실행할지, 위키 정보로 답할지 조금 더 구체적으로 말해줘요.", Array.Empty<string>());
+                break;
+        }
+    }
+
+    private async Task AnswerWithWikiAsync(string question)
+    {
+        if (!RequireHost())
+            return;
+
+        if (!Config.WikiAnswers.WikiAnswersEnabled)
+        {
+            PublishHelperAnswer("위키 기반 답변 기능이 꺼져 있어요.", Array.Empty<string>());
+            return;
+        }
+
+        var cooldown = TimeSpan.FromSeconds(Math.Max(0, Config.WikiAnswers.WikiQuestionCooldownSeconds));
+        var now = DateTimeOffset.UtcNow;
+        if (cooldown > TimeSpan.Zero && now - lastWikiQuestionAt < cooldown)
+        {
+            PublishHelperAnswer("위키 질문은 잠깐 쉬었다가 다시 물어봐 주세요.", Array.Empty<string>());
+            return;
+        }
+
+        lastWikiQuestionAt = now;
+
+        try
+        {
+            httpClient.Timeout = TimeSpan.FromSeconds(Math.Max(5, Config.Gemini.TimeoutSeconds));
+            var wikiClient = new WikiClient(httpClient, new WikiClientOptions(Config.WikiAnswers.WikiBaseUrl));
+            IReadOnlyList<WikiSearchResult> searchResults;
+            if (!wikiCache.TryGetSearch(question, out searchResults))
+            {
+                var search = await wikiClient.SearchAsync(question, Math.Max(1, Config.WikiAnswers.WikiMaxPages)).ConfigureAwait(false);
+                if (!search.Success)
+                {
+                    PublishHelperAnswer("지금은 위키에 접속할 수 없어서 확인하지 못했어요.", Array.Empty<string>());
+                    return;
+                }
+
+                searchResults = search.Value;
+                wikiCache.SetSearch(question, searchResults);
+            }
+
+            if (searchResults.Count == 0)
+            {
+                PublishHelperAnswer("한국어 위키에서 관련 내용을 찾지 못했어요.", Array.Empty<string>());
+                return;
+            }
+
+            var extracts = new List<WikiPageExtract>();
+            foreach (var result in searchResults.Take(Math.Max(1, Config.WikiAnswers.WikiMaxPages)))
+            {
+                if (!wikiCache.TryGetExtract(result.Title, out var cachedExtract))
+                {
+                    var extract = await wikiClient.GetExtractAsync(result.Title).ConfigureAwait(false);
+                    if (!extract.Success || string.IsNullOrWhiteSpace(extract.Value.Extract))
+                        continue;
+
+                    cachedExtract = extract.Value;
+                    wikiCache.SetExtract(result.Title, cachedExtract);
+                }
+
+                extracts.Add(cachedExtract);
+            }
+
+            var pagesForContext = extracts.Count > 0
+                ? extracts
+                : searchResults.Select(result => new WikiPageExtract(result.Title, result.Url, result.Snippet)).ToList();
+
+            var context = new WikiContextBuilder(new WikiContextOptions(
+                    Math.Max(1, Config.WikiAnswers.WikiMaxPages),
+                    Math.Max(1000, Config.WikiAnswers.WikiContextCharacterLimit)))
+                .Build(pagesForContext);
+
+            if (!Config.Gemini.IsConfigured)
+            {
+                PublishHelperAnswer("위키 페이지는 찾았지만 Gemini가 설정되어 있지 않아 요약할 수 없어요.", FormatSources(context.Sources));
+                return;
+            }
+
+            var gemini = new GeminiClient(httpClient, Config.Gemini);
+            var planner = new GroundedAnswerPlanner(Config.Assistant);
+            var modelText = await gemini.GenerateTextAsync(planner.BuildPrompt(question, context)).ConfigureAwait(false);
+            var answer = GroundedAnswerPlanner.ParseAnswer(modelText);
+            if (!answer.Success)
+            {
+                PublishHelperAnswer("위키 자료는 찾았지만 답변 요약을 만들지 못했어요. 출처를 확인해 주세요.", FormatSources(context.Sources));
+                return;
+            }
+
+            PublishHelperAnswer(answer.Answer, FormatSources(answer.Sources.Count > 0 ? answer.Sources : context.Sources));
+        }
+        catch (Exception ex)
+        {
+            Monitor.Log($"Wiki grounded answer failed: {ex.Message}", LogLevel.Warn);
+            PublishHelperAnswer("지금은 위키 기반 답변을 만들 수 없어요.", Array.Empty<string>());
+        }
+    }
+
+    private void PublishHelperAnswer(string answer, IReadOnlyList<string> sources)
+    {
+        helperState.Status = answer.Length > 96 ? answer[..96] + "..." : answer;
+        multiplayer.BroadcastHelperAnswer(new HelperAnswerMessage(answer, sources));
+        Monitor.Log($"pumasi answer: {answer}", LogLevel.Info);
+        if (sources.Count > 0)
+            Monitor.Log($"sources: {string.Join(", ", sources)}", LogLevel.Info);
+        BroadcastState();
+    }
+
+    private static IReadOnlyList<string> FormatSources(IReadOnlyList<WikiSource> sources)
+    {
+        return sources
+            .Where(source => !string.IsNullOrWhiteSpace(source.Title) || !string.IsNullOrWhiteSpace(source.Url))
+            .Select(source => string.IsNullOrWhiteSpace(source.Url) ? source.Title : $"{source.Title} - {source.Url}")
+            .ToArray();
+    }
+
     private void ProcessNextTask()
     {
         var claimed = taskManager.ClaimNext();
@@ -260,7 +397,7 @@ public sealed class ModEntry : Mod
             return;
 
         Monitor.Log($"Received helper command from player {playerId}: {command}", LogLevel.Info);
-        _ = PlanWithGeminiAsync(command);
+        _ = HandleAskAsync(command);
     }
 
     private void BroadcastState()

@@ -30,6 +30,7 @@ internal sealed class MultiplayerSyncService
 
     public TodoSnapshot LatestSnapshot => latestSnapshot;
     public HelperStateMessage? LatestHelperState { get; private set; }
+    public HelperAnswerMessage? LatestAnswer { get; private set; }
 
     public void Broadcast(TodoSnapshot snapshot, HelperRuntimeState state, SharedConfigSnapshot sharedConfig)
     {
@@ -49,6 +50,16 @@ internal sealed class MultiplayerSyncService
         helper.Multiplayer.SendMessage(new TodoSnapshotMessage(snapshot), MessageTypes.TodoSnapshot, new[] { manifest.UniqueID });
         helper.Multiplayer.SendMessage(helperStateMessage, MessageTypes.HelperState, new[] { manifest.UniqueID });
         helper.Multiplayer.SendMessage(new SharedConfigMessage(sharedConfig), MessageTypes.SharedConfig, new[] { manifest.UniqueID });
+    }
+
+    public void BroadcastHelperAnswer(HelperAnswerMessage answer)
+    {
+        LatestAnswer = answer;
+
+        if (!Context.IsMainPlayer)
+            return;
+
+        helper.Multiplayer.SendMessage(answer, MessageTypes.HelperAnswer, new[] { manifest.UniqueID });
     }
 
     public void SendGuestCommand(string command)
@@ -79,6 +90,13 @@ internal sealed class MultiplayerSyncService
 
             case MessageTypes.HelperState when !Context.IsMainPlayer:
                 LatestHelperState = e.ReadAs<HelperStateMessage>();
+                break;
+
+            case MessageTypes.HelperAnswer when !Context.IsMainPlayer:
+                LatestAnswer = e.ReadAs<HelperAnswerMessage>();
+                monitor.Log($"pumasi answer: {LatestAnswer.Answer}", LogLevel.Info);
+                if (LatestAnswer.Sources.Count > 0)
+                    monitor.Log($"sources: {string.Join(", ", LatestAnswer.Sources)}", LogLevel.Info);
                 break;
 
             case MessageTypes.GuestCommand when Context.IsMainPlayer:

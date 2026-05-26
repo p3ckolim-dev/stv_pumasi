@@ -34,4 +34,16 @@ public sealed class ConfigRedactionTests
         Assert.DoesNotContain("super-secret-gemini-key", config.ToString());
         Assert.Contains("ApiKey=set", config.ToString());
     }
+
+    [Fact]
+    public void WikiAnswerConfig_HasSerializableNonSecretDefaults()
+    {
+        var config = new ModConfig();
+
+        var json = JsonSerializer.Serialize(config.WikiAnswers);
+
+        Assert.Contains("ko.stardewvalleywiki.com", json);
+        Assert.Contains("WikiAnswersEnabled", json);
+        Assert.DoesNotContain("ApiKey", json);
+    }
 }

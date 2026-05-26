@@ -54,6 +54,14 @@ pms_todo
 
 Guests can run `pms_ask`; the command is routed to the host. Only the host calls Gemini and mutates game state.
 
+`pms_ask` now separates farm-work requests from information questions:
+
+- `pms_ask 온실 수확해줘` uses the task planner.
+- `pms_ask 딸기 씨앗은 어디서 사?` searches the Korean Stardew Valley Wiki, then asks Gemini to answer only from that wiki context.
+- Ambiguous requests ask for clarification and do not enqueue tasks.
+
+Wiki-grounded answers use `https://ko.stardewvalleywiki.com` by default. The host performs wiki and Gemini calls, then broadcasts only the final public answer and source metadata to guests.
+
 ## Build And Test
 
 This repository includes a local `.dotnet/` install path in `.gitignore`, so the SDK can be installed locally without committing it.

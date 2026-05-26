@@ -7,6 +7,7 @@ public static class MessageTypes
 {
     public const string TodoSnapshot = "TodoSnapshot";
     public const string HelperState = "HelperState";
+    public const string HelperAnswer = "HelperAnswer";
     public const string GuestCommand = "GuestCommand";
     public const string SharedConfig = "SharedConfig";
 }
@@ -24,3 +25,5 @@ public sealed record GuestCommandMessage(string Command, long PlayerId);
 public sealed record TodoSnapshotMessage(TodoSnapshot Snapshot);
 
 public sealed record SharedConfigMessage(SharedConfigSnapshot Config);
+
+public sealed record HelperAnswerMessage(string Answer, IReadOnlyList<string> Sources);

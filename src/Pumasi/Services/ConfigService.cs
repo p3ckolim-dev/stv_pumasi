@@ -74,5 +74,12 @@ internal sealed class ConfigService
             () => "Gemini API key",
             () => "Stored only in this host's local config. Enter a new key to replace the existing one.");
         api.AddNumberOption(manifest, () => Config.Gemini.MaxCallsPerDay, value => Config.Gemini.MaxCallsPerDay = value, () => "Max calls per day", min: 0, max: 500);
+
+        api.AddSectionTitle(manifest, () => "Wiki Answers");
+        api.AddBoolOption(manifest, () => Config.WikiAnswers.WikiAnswersEnabled, value => Config.WikiAnswers.WikiAnswersEnabled = value, () => "Use Korean Wiki answers");
+        api.AddTextOption(manifest, () => Config.WikiAnswers.WikiBaseUrl, value => Config.WikiAnswers.WikiBaseUrl = value, () => "Wiki base URL");
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiMaxPages, value => Config.WikiAnswers.WikiMaxPages = value, () => "Max wiki pages", min: 1, max: 5);
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiContextCharacterLimit, value => Config.WikiAnswers.WikiContextCharacterLimit = value, () => "Wiki context character limit", min: 1000, max: 20000);
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiQuestionCooldownSeconds, value => Config.WikiAnswers.WikiQuestionCooldownSeconds = value, () => "Wiki question cooldown seconds", min: 0, max: 120);
     }
 }
