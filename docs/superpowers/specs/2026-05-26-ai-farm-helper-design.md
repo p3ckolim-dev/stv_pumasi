@@ -92,7 +92,7 @@ Recommended split:
 
 If Generic Mod Config Menu is missing, the custom menu should still cover all required settings.
 
-The first AI provider adapter will be OpenAI-compatible: configurable base URL, model name, and API key behind an internal provider interface. This keeps the first version concrete while leaving room for other providers later.
+The first AI provider adapter will be Gemini API: configurable base URL, model name, and host-local Gemini API key behind an internal provider interface. This keeps the first version concrete while leaving room for OpenAI-compatible or other providers later.
 
 ### AI Planner
 
@@ -383,7 +383,7 @@ Regression scenarios:
 ## First Implementation Decisions
 
 - Visual asset style: start with a simple custom NPC sprite sheet, then make appearance configurable later.
-- AI provider: implement one OpenAI-compatible adapter first.
+- AI provider: implement one Gemini API adapter first, using the `x-goog-api-key` request header.
 - Generic Mod Config Menu: keep it optional from day one.
 - Pathfinding: attempt normal visual movement when practical; teleport as a fallback when the target is unreachable or movement would stall task execution.
 

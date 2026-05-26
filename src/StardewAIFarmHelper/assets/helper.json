@@ -1,0 +1,4 @@
+{
+  "name": "default-helper",
+  "note": "MVP uses a drawn HUD marker/status when no sprite sheet is installed."
+}
