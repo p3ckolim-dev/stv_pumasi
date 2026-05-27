@@ -7,6 +7,14 @@ namespace Pumasi.Core.Tests.Configuration;
 public sealed class ConfigRedactionTests
 {
     [Fact]
+    public void ModConfig_UsesPumasiAsDefaultAssistantName()
+    {
+        var config = new ModConfig();
+
+        Assert.Equal("Pumasi", config.Assistant.Name);
+    }
+
+    [Fact]
     public void ToSharedSnapshot_DoesNotIncludeGeminiApiKey()
     {
         var config = new ModConfig
