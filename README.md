@@ -66,7 +66,7 @@ In-game chat:
 
 The chat aliases `/pms_ask`, `/pms_status`, `/pms_scan`, and `/pms_todo` are also registered. `/pms_key` is intentionally rejected in chat so API keys are not typed into multiplayer chat by accident; use the SMAPI console, config file, or Generic Mod Config Menu for secrets.
 
-Guests can run `pms_ask` or `/pms ask`; the command is routed to the host. Only the host calls Gemini and mutates game state.
+Guests can run `pms_ask` or `/pms ask`; the command is routed to the host. Only the host calls Gemini and mutates game state. Helper answers are shown in the in-game chat for the host and guests, with source lines when wiki sources are available.
 
 `pms_ask` now separates farm-work requests from information questions:
 

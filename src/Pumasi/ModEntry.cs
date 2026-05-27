@@ -1,4 +1,6 @@
+using Microsoft.Xna.Framework;
 using Pumasi.Core.Ai;
+using Pumasi.Core.Chat;
 using Pumasi.Core.Commands;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Knowledge;
@@ -284,6 +286,7 @@ public sealed class ModEntry : Mod
         if (surface != CommandSurface.Chat || !Context.IsWorldReady)
             return;
 
+        Game1.chatBox?.addMessage(message, Color.LightGreen);
         Game1.addHUDMessage(new HUDMessage(message));
     }
 
@@ -473,9 +476,19 @@ public sealed class ModEntry : Mod
         Monitor.Log($"pumasi answer: {answer}", LogLevel.Info);
         if (sources.Count > 0)
             Monitor.Log($"sources: {string.Join(", ", sources)}", LogLevel.Info);
+        PostHelperAnswerToChat(answer, sources);
         if (Context.IsWorldReady)
             Game1.addHUDMessage(new HUDMessage($"{helperState.Name}: {helperState.Status}"));
         BroadcastState();
+    }
+
+    private void PostHelperAnswerToChat(string answer, IReadOnlyList<string> sources)
+    {
+        if (!Context.IsWorldReady)
+            return;
+
+        foreach (var line in HelperChatFormatter.FormatAnswer(helperState.Name, answer, sources))
+            Game1.chatBox?.addMessage(line, Color.LightGreen);
     }
 
     private static IReadOnlyList<string> FormatSources(IReadOnlyList<WikiSource> sources)

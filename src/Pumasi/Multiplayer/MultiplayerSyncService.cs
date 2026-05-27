@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+using Pumasi.Core.Chat;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Tasks;
 using Pumasi.Services;
@@ -99,6 +101,7 @@ internal sealed class MultiplayerSyncService
                     monitor.Log($"sources: {string.Join(", ", LatestAnswer.Sources)}", LogLevel.Info);
                 if (Context.IsWorldReady)
                 {
+                    PostHelperAnswerToChat(LatestAnswer);
                     var preview = LatestAnswer.Answer.Length > 96 ? LatestAnswer.Answer[..96] + "..." : LatestAnswer.Answer;
                     Game1.addHUDMessage(new HUDMessage(preview));
                 }
@@ -116,5 +119,12 @@ internal sealed class MultiplayerSyncService
                 monitor.Log($"Ignored unsupported pumasi message type '{e.Type}'.", LogLevel.Trace);
                 break;
         }
+    }
+
+    private void PostHelperAnswerToChat(HelperAnswerMessage answer)
+    {
+        var helperName = LatestHelperState?.Name ?? "pumasi";
+        foreach (var line in HelperChatFormatter.FormatAnswer(helperName, answer.Answer, answer.Sources))
+            Game1.chatBox?.addMessage(line, Color.LightGreen);
     }
 }
