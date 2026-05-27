@@ -6,6 +6,22 @@ Quick links: [User EN](docs/user-en.md) | [User KO](docs/user-ko.md) | [Develope
 
 Current mod version: `0.1.3`
 
+## Name Origin / 이름의 유래
+
+`pumasi` is named after `품앗이`, a Korean tradition of reciprocal help, especially in farming communities. When a household did not have enough hands for seasonal work, neighbors or relatives would help with labor, and that help would later be repaid through labor in return.
+
+The name fits this mod because the helper is intended to take part in repetitive farm chores in the same cooperative spirit: it does not replace the farm, but helps carry the work when the player or multiplayer group is short on time.
+
+`pumasi`는 한국 전통 농촌 문화인 `품앗이`에서 따온 이름입니다. 품앗이는 농번기처럼 한 집의 일손만으로 감당하기 어려운 일이 있을 때 이웃이나 친인척이 노동을 보태고, 이후 비슷한 방식으로 그 도움을 되갚는 상호부조 관습입니다.
+
+이 모드의 도우미도 같은 의미를 이어받아, 플레이어나 멀티플레이 그룹이 반복적인 농장일에 시간이 부족할 때 함께 일을 나누는 존재를 목표로 합니다.
+
+References:
+
+- [Encyclopedia of Korean Culture: Dure](https://encykorea.aks.ac.kr/Article/E0016972) describes `품앗이` as a small-scale reciprocal labor exchange based on individual choice, distinct from the more obligatory village-wide `두레`.
+- [FAO Globally Important Agricultural Heritage Systems: Geumsan Traditional Ginseng System](https://www.fao.org/giahs/giahs-around-the-world/korea-geumsan-traditional-ginseng-system/en) notes `Pumasi` as a rural Korean practice of exchanging labor to help one another's farms.
+- [Digital Chilgok Culture Encyclopedia: 품앗이](https://chilgok.grandculture.net/chilgok/toc/GC02301577) explains `품앗이` as a traditional method of mutual farm labor exchange and connects it to `품갚음`, repaying labor with labor.
+
 ## Documentation
 
 Choose the page that matches what you want to do:
