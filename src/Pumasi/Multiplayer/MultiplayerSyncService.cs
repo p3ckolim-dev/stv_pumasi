@@ -97,6 +97,11 @@ internal sealed class MultiplayerSyncService
                 monitor.Log($"pumasi answer: {LatestAnswer.Answer}", LogLevel.Info);
                 if (LatestAnswer.Sources.Count > 0)
                     monitor.Log($"sources: {string.Join(", ", LatestAnswer.Sources)}", LogLevel.Info);
+                if (Context.IsWorldReady)
+                {
+                    var preview = LatestAnswer.Answer.Length > 96 ? LatestAnswer.Answer[..96] + "..." : LatestAnswer.Answer;
+                    Game1.addHUDMessage(new HUDMessage(preview));
+                }
                 break;
 
             case MessageTypes.GuestCommand when Context.IsMainPlayer:

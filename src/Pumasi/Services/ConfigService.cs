@@ -42,7 +42,7 @@ internal sealed class ConfigService
         var api = helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
         if (api is null)
         {
-            monitor.Log("Generic Mod Config Menu not found; pumasi (품앗이) will use config.json and console commands.", LogLevel.Info);
+            monitor.Log("Generic Mod Config Menu not found; pumasi (품앗이) will use config.json, SMAPI console commands, and /pms chat commands.", LogLevel.Info);
             return;
         }
 

@@ -44,6 +44,8 @@ Config fields:
 
 ## Commands
 
+SMAPI console:
+
 ```text
 pms_status
 pms_scan
@@ -52,7 +54,19 @@ pms_key <key>
 pms_todo
 ```
 
-Guests can run `pms_ask`; the command is routed to the host. Only the host calls Gemini and mutates game state.
+In-game chat:
+
+```text
+/pms status
+/pms scan
+/pms todo
+/pms ask <instruction>
+/pms <question or farm-work request>
+```
+
+The chat aliases `/pms_ask`, `/pms_status`, `/pms_scan`, and `/pms_todo` are also registered. `/pms_key` is intentionally rejected in chat so API keys are not typed into multiplayer chat by accident; use the SMAPI console, config file, or Generic Mod Config Menu for secrets.
+
+Guests can run `pms_ask` or `/pms ask`; the command is routed to the host. Only the host calls Gemini and mutates game state.
 
 `pms_ask` now separates farm-work requests from information questions:
 

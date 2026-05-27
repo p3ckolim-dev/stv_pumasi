@@ -1,4 +1,5 @@
 using Pumasi.Core.Ai;
+using Pumasi.Core.Commands;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Knowledge;
 using Pumasi.Core.Tasks;
@@ -10,11 +11,20 @@ using Pumasi.UI;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
 
 namespace Pumasi;
 
+internal enum CommandSurface
+{
+    Console,
+    Chat
+}
+
 public sealed class ModEntry : Mod
 {
+    private const string ChatCommandName = "p3ckolim.pms_pms";
+
     private ConfigService configService = null!;
     private TaskManager taskManager = null!;
     private HelperRuntimeState helperState = null!;
@@ -26,6 +36,7 @@ public sealed class ModEntry : Mod
     private WikiMemoryCache wikiCache = null!;
     private int executionCooldownTicks;
     private DateTimeOffset lastWikiQuestionAt = DateTimeOffset.MinValue;
+    private bool chatCommandsRegistered;
 
     public override void Entry(IModHelper helper)
     {
@@ -58,6 +69,45 @@ public sealed class ModEntry : Mod
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
         configService.RegisterGenericModConfigMenu();
+        RegisterChatCommands();
+    }
+
+    private void RegisterChatCommands()
+    {
+        if (chatCommandsRegistered)
+            return;
+
+        if (ChatCommands.Exists(ChatCommandName))
+        {
+            Monitor.Log("pumasi chat command was already registered; skipping duplicate registration.", LogLevel.Trace);
+            chatCommandsRegistered = true;
+            return;
+        }
+
+        try
+        {
+            ChatCommands.Register(
+                ChatCommandName,
+                OnPmsChatCommand,
+                _ => "/pms status | /pms scan | /pms todo | /pms ask <질문/작업> | /pms <질문/작업>",
+                new[] { "pms", "pms_ask", "pms_status", "pms_scan", "pms_todo", "pms_key" },
+                mainOnly: false,
+                multiplayerOnly: false,
+                cheatsOnly: false);
+
+            chatCommandsRegistered = true;
+            Monitor.Log("Registered in-game chat commands: /pms, /pms_ask, /pms_status, /pms_scan, /pms_todo.", LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            Monitor.Log($"Could not register pumasi chat commands: {ex.Message}", LogLevel.Warn);
+        }
+    }
+
+    private void OnPmsChatCommand(string[] command, ChatBox chat)
+    {
+        var parsed = PumasiCommandParser.ParseChatInput($"/{string.Join(" ", command)}");
+        RunPumasiCommand(parsed, CommandSurface.Chat);
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -108,25 +158,18 @@ public sealed class ModEntry : Mod
 
     private void OnStatusCommand(string command, string[] args)
     {
-        Monitor.Log($"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}", LogLevel.Info);
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Status, string.Empty), CommandSurface.Console);
     }
 
     private void OnScanCommand(string command, string[] args)
     {
-        if (!RequireHost())
-            return;
-
-        var added = EnqueueScanResults();
-        Monitor.Log($"Queued {added} scanned task(s).", LogLevel.Info);
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Scan, string.Empty), CommandSurface.Console);
     }
 
     private void OnAskCommand(string command, string[] args)
     {
         var instruction = args.Length == 0 ? "Plan safe farm chores." : string.Join(" ", args);
-        if (Context.IsMainPlayer)
-            _ = HandleAskAsync(instruction);
-        else
-            multiplayer.SendGuestCommand(instruction);
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Ask, instruction), CommandSurface.Console);
     }
 
     private void OnApiKeyCommand(string command, string[] args)
@@ -149,24 +192,99 @@ public sealed class ModEntry : Mod
 
     private void OnTodoCommand(string command, string[] args)
     {
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Todo, string.Empty), CommandSurface.Console);
+    }
+
+    private void RunPumasiCommand(PumasiCommand command, CommandSurface surface)
+    {
+        switch (command.Kind)
+        {
+            case PumasiCommandKind.Ask:
+                AskPumasi(command.Argument, surface);
+                break;
+
+            case PumasiCommandKind.Status:
+                SendCommandFeedback(BuildStatusMessage(), surface);
+                break;
+
+            case PumasiCommandKind.Scan:
+                ScanForTasks(surface);
+                break;
+
+            case PumasiCommandKind.Todo:
+                ShowTodoList(surface);
+                break;
+
+            case PumasiCommandKind.Help:
+                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms ask <질문/작업>, /pms <질문/작업>", surface);
+                break;
+
+            case PumasiCommandKind.ApiKeyRejected:
+                SendCommandFeedback("API KEY는 인게임 채팅에 입력하지 말고 SMAPI 콘솔의 pms_key <key> 또는 config.json에서 설정해줘요.", surface, LogLevel.Warn);
+                break;
+
+            case PumasiCommandKind.None:
+            default:
+                break;
+        }
+    }
+
+    private void AskPumasi(string instruction, CommandSurface surface)
+    {
+        if (Context.IsMainPlayer)
+        {
+            _ = HandleAskAsync(instruction);
+            return;
+        }
+
+        multiplayer.SendGuestCommand(instruction);
+        SendCommandFeedback("호스트에게 pumasi 요청을 보냈어요.", surface);
+    }
+
+    private void ScanForTasks(CommandSurface surface)
+    {
+        if (!RequireHost(surface))
+            return;
+
+        var added = EnqueueScanResults();
+        SendCommandFeedback($"Queued {added} scanned task(s).", surface);
+    }
+
+    private void ShowTodoList(CommandSurface surface)
+    {
         var snapshot = Context.IsMainPlayer ? taskManager.CreateSnapshot() : multiplayer.LatestSnapshot;
         if (snapshot.Items.Count == 0)
         {
-            Monitor.Log("Todo list is empty.", LogLevel.Info);
+            SendCommandFeedback("Todo list is empty.", surface);
             return;
         }
 
         foreach (var item in snapshot.Items)
-            Monitor.Log($"[{item.Status}] {item.Type} {item.Location}({item.X},{item.Y}) key={item.Key}", LogLevel.Info);
+            SendCommandFeedback($"[{item.Status}] {item.Type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
     }
 
-    private bool RequireHost()
+    private string BuildStatusMessage()
+    {
+        return $"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}";
+    }
+
+    private bool RequireHost(CommandSurface surface = CommandSurface.Console)
     {
         if (Context.IsMainPlayer)
             return true;
 
-        Monitor.Log("This command is host-only. Guests send commands through pms_ask.", LogLevel.Warn);
+        SendCommandFeedback("This command is host-only. Guests send commands through /pms ask.", surface, LogLevel.Warn);
         return false;
+    }
+
+    private void SendCommandFeedback(string message, CommandSurface surface, LogLevel level = LogLevel.Info)
+    {
+        Monitor.Log(message, level);
+
+        if (surface != CommandSurface.Chat || !Context.IsWorldReady)
+            return;
+
+        Game1.addHUDMessage(new HUDMessage(message));
     }
 
     private int EnqueueScanResults()
@@ -355,6 +473,8 @@ public sealed class ModEntry : Mod
         Monitor.Log($"pumasi answer: {answer}", LogLevel.Info);
         if (sources.Count > 0)
             Monitor.Log($"sources: {string.Join(", ", sources)}", LogLevel.Info);
+        if (Context.IsWorldReady)
+            Game1.addHUDMessage(new HUDMessage($"{helperState.Name}: {helperState.Status}"));
         BroadcastState();
     }
 
