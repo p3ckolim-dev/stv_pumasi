@@ -12,6 +12,7 @@ public sealed class ConfigRedactionTests
         var config = new ModConfig();
 
         Assert.Equal("Pumasi", config.Assistant.Name);
+        Assert.Equal(3, config.Assistant.MorningTodoLimit);
     }
 
     [Fact]

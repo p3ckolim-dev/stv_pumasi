@@ -18,7 +18,7 @@ public static class PumasiCommandParser
             "pms_ask" => CreateAsk(args, defaultToSafeChores: true),
             "pms_status" => new PumasiCommand(PumasiCommandKind.Status, string.Empty),
             "pms_scan" => new PumasiCommand(PumasiCommandKind.Scan, string.Empty),
-            "pms_todo" => new PumasiCommand(PumasiCommandKind.Todo, string.Empty),
+            "pms_todo" => CreateTodo(args),
             "pms_key" => new PumasiCommand(PumasiCommandKind.ApiKeyRejected, string.Empty),
             _ => PumasiCommand.None
         };
@@ -37,7 +37,7 @@ public static class PumasiCommandParser
             "ask" or "question" or "q" => CreateAsk(rest, defaultToSafeChores: true),
             "status" => new PumasiCommand(PumasiCommandKind.Status, string.Empty),
             "scan" => new PumasiCommand(PumasiCommandKind.Scan, string.Empty),
-            "todo" or "todos" or "list" => new PumasiCommand(PumasiCommandKind.Todo, string.Empty),
+            "todo" or "todos" or "list" => CreateTodo(rest),
             "help" or "?" => new PumasiCommand(PumasiCommandKind.Help, string.Empty),
             "key" or "apikey" or "api_key" or "gemini_key" => new PumasiCommand(PumasiCommandKind.ApiKeyRejected, string.Empty),
             _ => CreateAsk(parts, defaultToSafeChores: false)
@@ -53,6 +53,13 @@ public static class PumasiCommandParser
         return instruction.Length == 0
             ? new PumasiCommand(PumasiCommandKind.Help, string.Empty)
             : new PumasiCommand(PumasiCommandKind.Ask, instruction);
+    }
+
+    private static PumasiCommand CreateTodo(IReadOnlyCollection<string> parts)
+    {
+        return new PumasiCommand(
+            PumasiCommandKind.Todo,
+            string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim());
     }
 
     private static string NormalizeCommandName(string commandName)

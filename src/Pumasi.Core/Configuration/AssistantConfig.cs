@@ -8,4 +8,5 @@ public sealed class AssistantConfig
     public AutomationMode AutomationMode { get; set; } = AutomationMode.Confirm;
     public WorkCategoryConfig WorkCategories { get; set; } = new();
     public int MaxTasksPerDay { get; set; } = 60;
+    public int MorningTodoLimit { get; set; } = 3;
 }

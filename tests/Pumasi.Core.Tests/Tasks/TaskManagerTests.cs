@@ -48,7 +48,7 @@ public sealed class TaskManagerTests
     }
 
     [Fact]
-    public void ClaimNext_ClaimsOnlyOneTaskAtATimeByPriority()
+    public void ClaimNext_ClaimsOnlyOneTaskAtATimeByTodoOrder()
     {
         var manager = new TaskManager(new FixedClock());
         manager.Enqueue(new TaskProposal(TaskType.WaterCrop, new TaskTarget("Farm", 10, 10), 10, "dry crop"));
@@ -58,9 +58,41 @@ public sealed class TaskManagerTests
         var second = manager.ClaimNext();
 
         Assert.NotNull(first);
-        Assert.Equal(TaskType.HarvestCrop, first.Type);
+        Assert.Equal(TaskType.WaterCrop, first.Type);
         Assert.Equal(HelperTaskStatus.Claimed, first.Status);
         Assert.Null(second);
+    }
+
+    [Fact]
+    public void MoveActiveTask_ReordersQueuedTasksByVisibleTodoPosition()
+    {
+        var manager = new TaskManager(new FixedClock());
+        manager.Enqueue(new TaskProposal(TaskType.WaterCrop, new TaskTarget("Farm", 10, 10), 10, "dry crop"));
+        manager.Enqueue(new TaskProposal(TaskType.HarvestCrop, new TaskTarget("Farm", 11, 10), 80, "ready crop"));
+        manager.Enqueue(new TaskProposal(TaskType.CollectMachine, new TaskTarget("Farm", 12, 10, ObjectName: "Keg"), 60, "ready keg"));
+
+        var result = manager.MoveActiveTask(3, 1);
+        var claimed = manager.ClaimNext();
+
+        Assert.True(result.Moved);
+        Assert.NotNull(claimed);
+        Assert.Equal(TaskType.CollectMachine, claimed.Type);
+    }
+
+    [Fact]
+    public void MoveActiveTask_RejectsInProgressTask()
+    {
+        var manager = new TaskManager(new FixedClock());
+        manager.Enqueue(new TaskProposal(TaskType.WaterCrop, new TaskTarget("Farm", 10, 10), 10, "dry crop"));
+        manager.Enqueue(new TaskProposal(TaskType.HarvestCrop, new TaskTarget("Farm", 11, 10), 80, "ready crop"));
+        var first = manager.ClaimNext();
+        Assert.NotNull(first);
+        manager.Start(first.Id);
+
+        var result = manager.MoveActiveTask(1, 2);
+
+        Assert.False(result.Moved);
+        Assert.Equal("task-not-queued", result.Reason);
     }
 
     private sealed class FixedClock : IClock

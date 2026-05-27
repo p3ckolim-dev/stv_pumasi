@@ -24,6 +24,17 @@ public sealed class PumasiCommandParserTests
     }
 
     [Theory]
+    [InlineData("/pms todo up 2", "up 2")]
+    [InlineData("/pms_todo move 3 1", "move 3 1")]
+    public void ParseChatInput_PreservesTodoArguments(string input, string expectedArgument)
+    {
+        var command = PumasiCommandParser.ParseChatInput(input);
+
+        Assert.Equal(PumasiCommandKind.Todo, command.Kind);
+        Assert.Equal(expectedArgument, command.Argument);
+    }
+
+    [Theory]
     [InlineData("/pms status", PumasiCommandKind.Status)]
     [InlineData("/pms_status", PumasiCommandKind.Status)]
     [InlineData("/pms scan", PumasiCommandKind.Scan)]

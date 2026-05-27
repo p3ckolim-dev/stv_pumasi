@@ -26,7 +26,7 @@ internal sealed class TodoOverlay
         position.Y += lineHeight;
 
         var visibleItems = snapshot.Items
-            .Where(item => item.Status is not HelperTaskStatus.Completed and not HelperTaskStatus.Cancelled)
+            .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
             .Take(8)
             .ToArray();
 
@@ -36,9 +36,10 @@ internal sealed class TodoOverlay
             return;
         }
 
-        foreach (var item in visibleItems)
+        for (var i = 0; i < visibleItems.Length; i++)
         {
-            var text = $"[{item.Status}] {item.Type} {item.Location}({item.X},{item.Y})";
+            var item = visibleItems[i];
+            var text = $"#{i + 1} [{item.Status}] {item.Type} {item.Location}({item.X},{item.Y})";
             DrawShadowedText(spriteBatch, text, position, Color.White);
             position.Y += lineHeight;
         }

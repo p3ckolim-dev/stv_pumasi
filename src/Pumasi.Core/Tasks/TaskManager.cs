@@ -39,14 +39,45 @@ public sealed class TaskManager
         if (tasks.Any(task => task.Status is HelperTaskStatus.Claimed or HelperTaskStatus.InProgress))
             return null;
 
-        var next = tasks
-            .Where(task => task.Status == HelperTaskStatus.Queued)
-            .OrderByDescending(task => task.Priority)
-            .ThenBy(task => task.CreatedAt)
-            .FirstOrDefault();
+        var next = tasks.FirstOrDefault(task => task.Status == HelperTaskStatus.Queued);
 
         next?.Claim(clock.GetUtcNow());
         return next;
+    }
+
+    public TaskMoveResult MoveActiveTask(int fromPosition, int toPosition)
+    {
+        var active = tasks
+            .Where(task => task.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
+            .ToArray();
+
+        if (fromPosition < 1 || fromPosition > active.Length || toPosition < 1 || toPosition > active.Length)
+            return TaskMoveResult.Rejected("position-out-of-range");
+
+        var selected = active[fromPosition - 1];
+        if (selected.Status != HelperTaskStatus.Queued)
+            return TaskMoveResult.Rejected("task-not-queued");
+
+        if (fromPosition == toPosition)
+            return TaskMoveResult.NoChange();
+
+        var reorderedActive = active.ToList();
+        reorderedActive.RemoveAt(fromPosition - 1);
+        reorderedActive.Insert(toPosition - 1, selected);
+
+        var activeIds = active.Select(task => task.Id).ToHashSet();
+        var reorderedById = reorderedActive.ToDictionary(task => task.Id);
+        var nextActiveIndex = 0;
+        for (var i = 0; i < tasks.Count; i++)
+        {
+            if (!activeIds.Contains(tasks[i].Id))
+                continue;
+
+            tasks[i] = reorderedById[reorderedActive[nextActiveIndex].Id];
+            nextActiveIndex++;
+        }
+
+        return TaskMoveResult.MovedTask(selected);
     }
 
     public bool Start(Guid id) => Update(id, task => task.Start(clock.GetUtcNow()));
@@ -69,4 +100,11 @@ public sealed class TaskManager
         update(task);
         return true;
     }
+}
+
+public sealed record TaskMoveResult(bool Moved, HelperTask? Task, string Reason)
+{
+    public static TaskMoveResult MovedTask(HelperTask task) => new(true, task, "moved");
+    public static TaskMoveResult NoChange() => new(true, null, "no-change");
+    public static TaskMoveResult Rejected(string reason) => new(false, null, reason);
 }

@@ -4,7 +4,7 @@
 
 `pumasi` (`pms`, 한글 이름: `품앗이`)는 Stardew Valley용 SMAPI 모드 프로토타입입니다. 질문에 답하고, 투두 목록을 관리하고, 제한된 범위의 안전한 반복 농장 작업을 수행하는 도우미를 제공합니다.
 
-현재 모드 버전: `0.1.3`
+현재 모드 버전: `0.1.4`
 
 ## 이 문서의 대상
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI는 시작할 때 정확한 `Mods go here:` 경로를 출력합니다. 위 예시와 다르면 SMAPI가 출력한 경로를 기준으로 설치하세요.
 
-설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.3`가 보이면 정상입니다.
+설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.4`가 보이면 정상입니다.
 
 ## Gemini API 키
 
@@ -77,7 +77,7 @@ pms_status
 pms_scan
 pms_ask <질문 또는 농장 작업 요청>
 pms_key <gemini-api-key>
-pms_todo
+pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
 ```
 
 인게임 채팅 명령어:
@@ -86,6 +86,7 @@ pms_todo
 /pms status
 /pms scan
 /pms todo
+/pms todo move 3 1
 /pms ask <질문 또는 농장 작업 요청>
 /pms <질문 또는 농장 작업 요청>
 ```
@@ -176,7 +177,19 @@ Pumasi: 딸기 씨앗은 봄 달걀 축제에서 살 수 있어요.
 - 다 자란 작물 수확.
 - 준비된 기계 수거.
 
-도우미는 큐에 있는 작업을 한 번에 하나씩 처리하며, 안정적인 task key로 활성 작업 중복을 피합니다.
+도우미는 보이는 투두 목록의 맨 위부터 한 번에 하나씩 처리합니다. 체크리스트를 위에서 아래로 체크하는 방식에 가깝습니다. 유저가 요청한 작업은 큐의 맨 아래에 추가되므로, 호스트가 순서를 조정하지 않으면 기존 작업 뒤에서 기다립니다.
+
+매일 아침 자동화 모드가 `Off`가 아니면 Pumasi가 농장을 살펴보고 기본적으로 우선순위가 높은 안전 작업 3개 정도를 투두로 쌓습니다. 호스트는 `Assistant.MorningTodoLimit` 값으로 이 개수를 조정할 수 있습니다.
+
+투두 순서 조정 명령은 호스트 전용입니다.
+
+```text
+/pms todo move 3 1
+/pms todo up 2
+/pms todo down 1
+/pms todo top 4
+/pms todo bottom 1
+```
 
 현재 한계:
 

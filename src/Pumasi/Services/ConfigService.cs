@@ -52,6 +52,7 @@ internal sealed class ConfigService
         api.AddTextOption(manifest, () => Config.Assistant.Personality, value => Config.Assistant.Personality = value, () => "Personality");
         api.AddTextOption(manifest, () => Config.Assistant.BehaviorRules, value => Config.Assistant.BehaviorRules = value, () => "Behavior rules");
         api.AddNumberOption(manifest, () => Config.Assistant.MaxTasksPerDay, value => Config.Assistant.MaxTasksPerDay = value, () => "Max tasks per day", min: 1, max: 500);
+        api.AddNumberOption(manifest, () => Config.Assistant.MorningTodoLimit, value => Config.Assistant.MorningTodoLimit = value, () => "Morning todos", min: 0, max: 20);
 
         api.AddSectionTitle(manifest, () => "Work Categories");
         api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Crops, value => Config.Assistant.WorkCategories.Crops = value, () => "Crops");

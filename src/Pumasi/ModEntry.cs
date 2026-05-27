@@ -63,7 +63,7 @@ public sealed class ModEntry : Mod
         helper.ConsoleCommands.Add("pms_scan", "Host only: scan farm tasks and enqueue safe todos.", OnScanCommand);
         helper.ConsoleCommands.Add("pms_ask", "Ask pumasi to answer a wiki question or plan safe farm work. Usage: pms_ask <instruction>", OnAskCommand);
         helper.ConsoleCommands.Add("pms_key", "Host local only: set Gemini API key. Usage: pms_key <key>", OnApiKeyCommand);
-        helper.ConsoleCommands.Add("pms_todo", "Show current todo list in the SMAPI console.", OnTodoCommand);
+        helper.ConsoleCommands.Add("pms_todo", "Show or reorder current todo list. Usage: pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]", OnTodoCommand);
     }
 
     private ModConfig Config => configService.Config;
@@ -91,7 +91,7 @@ public sealed class ModEntry : Mod
             ChatCommands.Register(
                 ChatCommandName,
                 OnPmsChatCommand,
-                _ => "/pms status | /pms scan | /pms todo | /pms ask <질문/작업> | /pms <질문/작업>",
+                _ => "/pms status | /pms scan | /pms todo [move/up/down] | /pms ask <질문/작업> | /pms <질문/작업>",
                 new[] { "pms", "pms_ask", "pms_status", "pms_scan", "pms_todo", "pms_key" },
                 mainOnly: false,
                 multiplayerOnly: false,
@@ -121,8 +121,8 @@ public sealed class ModEntry : Mod
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
     {
-        if (Context.IsMainPlayer && Config.Assistant.AutomationMode is AutomationMode.Confirm or AutomationMode.Auto)
-            EnqueueScanResults();
+        if (Context.IsMainPlayer && Config.Assistant.AutomationMode != AutomationMode.Off)
+            EnqueueMorningTodos();
     }
 
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
@@ -194,7 +194,7 @@ public sealed class ModEntry : Mod
 
     private void OnTodoCommand(string command, string[] args)
     {
-        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Todo, string.Empty), CommandSurface.Console);
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Todo, string.Join(" ", args)), CommandSurface.Console);
     }
 
     private void RunPumasiCommand(PumasiCommand command, CommandSurface surface)
@@ -214,11 +214,11 @@ public sealed class ModEntry : Mod
                 break;
 
             case PumasiCommandKind.Todo:
-                ShowTodoList(surface);
+                ShowTodoList(command.Argument, surface);
                 break;
 
             case PumasiCommandKind.Help:
-                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms ask <질문/작업>, /pms <질문/작업>", surface);
+                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms todo move 3 1, /pms ask <질문/작업>, /pms <질문/작업>", surface);
                 break;
 
             case PumasiCommandKind.ApiKeyRejected:
@@ -254,15 +254,110 @@ public sealed class ModEntry : Mod
 
     private void ShowTodoList(CommandSurface surface)
     {
+        ShowTodoList(string.Empty, surface);
+    }
+
+    private void ShowTodoList(string argument, CommandSurface surface)
+    {
         var snapshot = Context.IsMainPlayer ? taskManager.CreateSnapshot() : multiplayer.LatestSnapshot;
-        if (snapshot.Items.Count == 0)
+        var visibleItems = snapshot.Items
+            .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
+            .ToArray();
+
+        if (!string.IsNullOrWhiteSpace(argument))
+        {
+            if (!Context.IsMainPlayer)
+            {
+                SendCommandFeedback("Todo reorder is host-only. Guests can view the synced todo list.", surface, LogLevel.Warn);
+                return;
+            }
+
+            HandleTodoReorder(argument, visibleItems.Length, surface);
+            snapshot = taskManager.CreateSnapshot();
+            visibleItems = snapshot.Items
+                .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
+                .ToArray();
+        }
+
+        if (visibleItems.Length == 0)
         {
             SendCommandFeedback("Todo list is empty.", surface);
             return;
         }
 
-        foreach (var item in snapshot.Items)
-            SendCommandFeedback($"[{item.Status}] {item.Type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
+        for (var i = 0; i < visibleItems.Length; i++)
+        {
+            var item = visibleItems[i];
+            SendCommandFeedback($"#{i + 1} [{item.Status}] {item.Type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
+        }
+    }
+
+    private void HandleTodoReorder(string argument, int visibleCount, CommandSurface surface)
+    {
+        var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+            return;
+
+        if (!TryResolveTodoMove(parts, visibleCount, out var from, out var to, out var error))
+        {
+                SendCommandFeedback($"Todo reorder usage: /pms todo move <from> <to>, /pms todo up <index>, /pms todo down <index>, /pms todo top <index>, /pms todo bottom <index>. {error}", surface, LogLevel.Warn);
+            return;
+        }
+
+        var result = taskManager.MoveActiveTask(from, to);
+        if (!result.Moved)
+        {
+            SendCommandFeedback($"Todo reorder failed: {result.Reason}", surface, LogLevel.Warn);
+            return;
+        }
+
+        SendCommandFeedback(result.Reason == "no-change" ? "Todo order unchanged." : $"Moved todo #{from} to #{to}.", surface);
+        BroadcastState();
+    }
+
+    private static bool TryResolveTodoMove(string[] parts, int visibleCount, out int from, out int to, out string error)
+    {
+        from = 0;
+        to = 0;
+        error = string.Empty;
+
+        if (visibleCount == 0)
+        {
+            error = "There are no active todos.";
+            return false;
+        }
+
+        var action = parts[0].ToLowerInvariant();
+        switch (action)
+        {
+            case "move" when parts.Length == 3 && TryParsePosition(parts[1], out from) && TryParsePosition(parts[2], out to):
+                return true;
+
+            case "up" when parts.Length == 2 && TryParsePosition(parts[1], out from):
+                to = from - 1;
+                return true;
+
+            case "down" when parts.Length == 2 && TryParsePosition(parts[1], out from):
+                to = from + 1;
+                return true;
+
+            case "top" when parts.Length == 2 && TryParsePosition(parts[1], out from):
+                to = 1;
+                return true;
+
+            case "bottom" when parts.Length == 2 && TryParsePosition(parts[1], out from):
+                to = visibleCount;
+                return true;
+
+            default:
+                error = "Unknown reorder command.";
+                return false;
+        }
+    }
+
+    private static bool TryParsePosition(string value, out int position)
+    {
+        return int.TryParse(value, out position) && position > 0;
     }
 
     private string BuildStatusMessage()
@@ -290,9 +385,26 @@ public sealed class ModEntry : Mod
         Game1.addHUDMessage(new HUDMessage(message));
     }
 
-    private int EnqueueScanResults()
+    private void EnqueueMorningTodos()
+    {
+        var limit = Math.Max(0, Config.Assistant.MorningTodoLimit);
+        if (limit == 0)
+            return;
+
+        var added = EnqueueScanResults(limit, broadcast: false);
+        helperState.Status = added > 0
+            ? $"Morning scan queued {added} todo(s)"
+            : "Morning scan found no new todos";
+        Monitor.Log(helperState.Status, LogLevel.Info);
+        BroadcastState();
+    }
+
+    private int EnqueueScanResults(int? limit = null, bool broadcast = true)
     {
         var proposals = scanner.Scan(Config);
+        if (limit is > 0)
+            proposals = proposals.Take(limit.Value).ToArray();
+
         var added = 0;
         foreach (var proposal in proposals)
         {
@@ -301,7 +413,9 @@ public sealed class ModEntry : Mod
                 added++;
         }
 
-        BroadcastState();
+        if (broadcast)
+            BroadcastState();
+
         return added;
     }
 
