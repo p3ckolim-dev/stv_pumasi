@@ -4,7 +4,7 @@ Quick links: [User EN](docs/user-en.md) | [User KO](docs/user-ko.md) | [Develope
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It provides a host-authoritative helper concept that can answer Stardew Valley questions, keep a shared todo list, and execute a small set of safe repetitive farm chores.
 
-Current mod version: `0.1.10`
+Current mod version: `0.1.11`
 
 ## Name Origin / 이름의 유래
 

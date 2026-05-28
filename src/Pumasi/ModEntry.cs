@@ -5,6 +5,7 @@ using Pumasi.Core.Chat;
 using Pumasi.Core.Commands;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Knowledge;
+using Pumasi.Core.Net;
 using Pumasi.Core.Tasks;
 using Pumasi.Core.Ui;
 using Pumasi.Game;
@@ -39,7 +40,6 @@ public sealed class ModEntry : Mod
     private FarmTaskExecutor executor = null!;
     private MultiplayerSyncService multiplayer = null!;
     private TodoOverlay overlay = null!;
-    private HttpClient httpClient = null!;
     private WikiMemoryCache wikiCache = null!;
     private readonly List<ConversationTurn> conversationHistory = new();
     private GameMenu? pumasiSettingsGameMenu;
@@ -57,7 +57,6 @@ public sealed class ModEntry : Mod
         scanner = new FarmTaskScanner();
         executor = new FarmTaskExecutor(helperState);
         overlay = new TodoOverlay { Visible = configService.Config.Ui.ShowTodoOverlay };
-        httpClient = new HttpClient();
         wikiCache = new WikiMemoryCache();
         multiplayer = new MultiplayerSyncService(helper, Monitor, ModManifest, HandleGuestCommand);
 
@@ -743,8 +742,8 @@ public sealed class ModEntry : Mod
 
         try
         {
-            httpClient.Timeout = TimeSpan.FromSeconds(Math.Max(5, Config.Gemini.TimeoutSeconds));
-            var client = new GeminiClient(httpClient, Config.Gemini);
+            using var requestHttpClient = PumasiHttpClientFactory.Create(Config.Gemini.TimeoutSeconds);
+            var client = new GeminiClient(requestHttpClient, Config.Gemini);
             var planner = new GeminiPlanner(client, Config.Assistant);
             var candidates = scanner.Scan(Config);
             var summary = new FarmSummary(
@@ -815,8 +814,8 @@ public sealed class ModEntry : Mod
 
         try
         {
-            httpClient.Timeout = TimeSpan.FromSeconds(Math.Max(5, Config.Gemini.TimeoutSeconds));
-            var client = new GeminiClient(httpClient, Config.Gemini);
+            using var requestHttpClient = PumasiHttpClientFactory.Create(Config.Gemini.TimeoutSeconds);
+            var client = new GeminiClient(requestHttpClient, Config.Gemini);
             var currentTodos = taskManager.CreateSnapshot().Items
                 .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
                 .Select((item, index) => $"#{index + 1} {item.Key} [{item.Status}] {item.Reason}")
@@ -883,8 +882,8 @@ public sealed class ModEntry : Mod
 
         try
         {
-            httpClient.Timeout = TimeSpan.FromSeconds(Math.Max(5, Config.Gemini.TimeoutSeconds));
-            var wikiClient = new WikiClient(httpClient, new WikiClientOptions(Config.WikiAnswers.WikiBaseUrl));
+            using var requestHttpClient = PumasiHttpClientFactory.Create(Config.Gemini.TimeoutSeconds);
+            var wikiClient = new WikiClient(requestHttpClient, new WikiClientOptions(Config.WikiAnswers.WikiBaseUrl));
             IReadOnlyList<WikiSearchResult> searchResults;
             if (!wikiCache.TryGetSearch(question, out searchResults))
             {
@@ -936,7 +935,7 @@ public sealed class ModEntry : Mod
                 return;
             }
 
-            var gemini = new GeminiClient(httpClient, Config.Gemini);
+            var gemini = new GeminiClient(requestHttpClient, Config.Gemini);
             var planner = new GroundedAnswerPlanner(Config.Assistant);
             var modelText = await gemini.GenerateTextAsync(planner.BuildPrompt(question, context)).ConfigureAwait(false);
             var answer = GroundedAnswerPlanner.ParseAnswer(modelText);
