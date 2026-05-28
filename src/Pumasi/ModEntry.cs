@@ -27,6 +27,7 @@ internal enum CommandSurface
 public sealed class ModEntry : Mod
 {
     private const string ChatCommandName = "p3ckolim.pms_pms";
+    private const int ConversationHistoryLimit = 12;
 
     private ConfigService configService = null!;
     private TaskManager taskManager = null!;
@@ -37,6 +38,7 @@ public sealed class ModEntry : Mod
     private TodoOverlay overlay = null!;
     private HttpClient httpClient = null!;
     private WikiMemoryCache wikiCache = null!;
+    private readonly List<ConversationTurn> conversationHistory = new();
     private int executionCooldownTicks;
     private DateTimeOffset lastWikiQuestionAt = DateTimeOffset.MinValue;
     private bool chatCommandsRegistered;
@@ -626,6 +628,7 @@ public sealed class ModEntry : Mod
             }
 
             helperState.Status = string.IsNullOrWhiteSpace(plan.Message) ? $"Gemini queued {accepted} task(s)" : plan.Message;
+            RememberConversation("assistant", helperState.Status);
             BroadcastState();
         }
         catch (Exception ex)
@@ -636,6 +639,8 @@ public sealed class ModEntry : Mod
 
     private async Task HandleAskAsync(string instruction)
     {
+        RememberConversation("user", instruction);
+
         var classifier = new KnowledgeIntentClassifier();
         switch (classifier.Classify(instruction))
         {
@@ -649,8 +654,66 @@ public sealed class ModEntry : Mod
 
             case KnowledgeIntent.Ambiguous:
             default:
-                PublishHelperAnswer("작업으로 실행할지, 위키 정보로 답할지 조금 더 구체적으로 말해줘요.", Array.Empty<string>());
+                await RouteAmbiguousInputWithGeminiAsync(instruction).ConfigureAwait(false);
                 break;
+        }
+    }
+
+    private async Task RouteAmbiguousInputWithGeminiAsync(string instruction)
+    {
+        if (!RequireHost())
+            return;
+
+        if (!Config.Gemini.IsConfigured)
+        {
+            PublishHelperAnswer("이 말은 맥락을 봐야 이해할 수 있는데 Gemini가 아직 설정되어 있지 않아요. SMAPI 콘솔에서 pms_key <key>를 먼저 설정해줘요.", Array.Empty<string>());
+            return;
+        }
+
+        try
+        {
+            httpClient.Timeout = TimeSpan.FromSeconds(Math.Max(5, Config.Gemini.TimeoutSeconds));
+            var client = new GeminiClient(httpClient, Config.Gemini);
+            var currentTodos = taskManager.CreateSnapshot().Items
+                .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
+                .Select((item, index) => $"#{index + 1} {item.Key} [{item.Status}] {item.Reason}")
+                .ToArray();
+
+            var prompt = ContextualIntentRouter.BuildPrompt(instruction, conversationHistory, currentTodos);
+            var modelText = await client.GenerateTextAsync(prompt).ConfigureAwait(false);
+            var routed = ContextualIntentRouter.ParseResponse(modelText);
+            if (!routed.Success)
+            {
+                Monitor.Log($"Contextual intent routing failed: {routed.Error}", LogLevel.Warn);
+                PublishHelperAnswer("말뜻을 이해하려고 했는데 라우팅 답변을 읽지 못했어요. 한 번만 다르게 말해줘요.", Array.Empty<string>());
+                return;
+            }
+
+            var rewritten = string.IsNullOrWhiteSpace(routed.RewrittenInput) ? instruction : routed.RewrittenInput;
+            switch (routed.Intent)
+            {
+                case ContextualIntentKind.TaskPlanning:
+                    await PlanWithGeminiAsync(rewritten).ConfigureAwait(false);
+                    break;
+
+                case ContextualIntentKind.WikiAnswer:
+                    await AnswerWithWikiAsync(rewritten).ConfigureAwait(false);
+                    break;
+
+                case ContextualIntentKind.ChatAnswer:
+                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? "응, 듣고 있어요." : routed.Answer, Array.Empty<string>());
+                    break;
+
+                case ContextualIntentKind.Clarify:
+                default:
+                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? "조금만 더 알려줘요. 맥락을 보고도 확신하기 어려워요." : routed.Answer, Array.Empty<string>());
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Monitor.Log($"Contextual intent routing error: {ex.Message}", LogLevel.Warn);
+            PublishHelperAnswer("대화 맥락을 읽는 중 문제가 생겼어요. 잠깐 뒤에 다시 말해줘요.", Array.Empty<string>());
         }
     }
 
@@ -751,6 +814,7 @@ public sealed class ModEntry : Mod
 
     private void PublishHelperAnswer(string answer, IReadOnlyList<string> sources)
     {
+        RememberConversation("assistant", answer);
         helperState.Status = answer.Length > 96 ? answer[..96] + "..." : answer;
         multiplayer.BroadcastHelperAnswer(new HelperAnswerMessage(answer, sources));
         Monitor.Log($"pumasi answer: {answer}", LogLevel.Info);
@@ -760,6 +824,16 @@ public sealed class ModEntry : Mod
         if (Context.IsWorldReady)
             Game1.addHUDMessage(new HUDMessage($"{helperState.Name}: {helperState.Status}"));
         BroadcastState();
+    }
+
+    private void RememberConversation(string role, string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        conversationHistory.Add(new ConversationTurn(role, text.Trim()));
+        while (conversationHistory.Count > ConversationHistoryLimit)
+            conversationHistory.RemoveAt(0);
     }
 
     private void PostHelperAnswerToChat(string answer, IReadOnlyList<string> sources)

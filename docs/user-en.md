@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.8`
+Current mod version: `0.1.9`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.8` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.9` among loaded mods.
 
 ## Gemini API Key
 
@@ -140,11 +140,12 @@ Guest requests are sent to the host. Guests do not need a Gemini API key. The fi
 
 ## AI And Wiki Answers
 
-`pms_ask` and `/pms` classify input into one of three paths:
+`pms_ask` and `/pms` first classify input with deterministic rules. If the input is ambiguous, Gemini reviews recent conversation and current todos before choosing a route.
 
 - Farm-work requests use Gemini for task planning.
 - Stardew Valley information questions search the Korean Stardew Valley Wiki, then Gemini answers only from that retrieved context.
-- Ambiguous requests ask for clarification and do not enqueue tasks.
+- Greetings, thanks, short reactions, and context-dependent inputs like `do that` can continue as a chat answer, task plan, or wiki answer based on recent context.
+- Pumasi asks for clarification only when it still cannot infer a safe route.
 
 Examples:
 

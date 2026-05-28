@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.8`
+현재 모드 버전: `0.1.9`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.8.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.9.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -123,7 +123,7 @@ pms_work <category> on|off
 
 - 작업 계획: `PlanWithGeminiAsync`.
 - 위키 답변: `AnswerWithWikiAsync`.
-- 애매한 요청: 작업 변경 없이 구체화 요청 답변.
+- 애매한 요청: `ContextualIntentRouter`가 최근 대화와 현재 투두를 Gemini에 전달해 작업 계획, 위키 답변, 일반 대화 답변, 구체화 질문 중 하나로 라우팅합니다.
 
 위키 답변은 아래 구성요소를 사용합니다.
 
