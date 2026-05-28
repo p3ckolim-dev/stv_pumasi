@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.9`
+Current mod version: `0.1.10`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.9` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.10` among loaded mods.
 
 ## Gemini API Key
 
@@ -103,6 +103,21 @@ Chat aliases:
 /pms_todo
 /pms_work
 ```
+
+## In-Game Quick Settings
+
+Open the ESC/game menu and select the `P` Pumasi tab added to the right side of the vanilla tabs. This is a quick settings page that works even when Generic Mod Config Menu is not installed.
+
+The current Pumasi tab can toggle:
+
+- Todo board visibility.
+- Helper notification visibility.
+- Crop, machine, animal, chest, and planting work categories.
+- Korean Wiki answer support.
+
+Changes are saved immediately to `Mods/Pumasi/config.json`. In multiplayer, guests can change local UI settings only. Host-authoritative settings like work categories and wiki answers must be changed by the host to affect execution.
+
+Text settings like helper name, behavior rules, and Gemini API key still use Generic Mod Config Menu, `config.json`, or the SMAPI console `pms_key` command in this version.
 
 ## Single-Player Use
 
@@ -219,7 +234,7 @@ Current limitations:
 
 ## Troubleshooting
 
-- If SMAPI says Generic Mod Config Menu is missing, the mod still works through `config.json`, SMAPI console commands, and `/pms` chat commands.
+- If SMAPI says Generic Mod Config Menu is missing, the mod still works through the Pumasi menu tab, `config.json`, SMAPI console commands, and `/pms` chat commands.
 - If Gemini answers fail, run `pms_status` and check whether `geminiConfigured=True`.
 - If a guest command does nothing, confirm host and guest both have the same pumasi mod installed.
 - If chat commands are unavailable after an update, restart Stardew Valley/SMAPI so the new DLL is loaded.

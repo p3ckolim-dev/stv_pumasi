@@ -4,7 +4,7 @@
 
 `pumasi` (`pms`, 한글 이름: `품앗이`)는 Stardew Valley용 SMAPI 모드 프로토타입입니다. 질문에 답하고, 투두 목록을 관리하고, 제한된 범위의 안전한 반복 농장 작업을 수행하는 도우미를 제공합니다.
 
-현재 모드 버전: `0.1.9`
+현재 모드 버전: `0.1.10`
 
 ## 이 문서의 대상
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI는 시작할 때 정확한 `Mods go here:` 경로를 출력합니다. 위 예시와 다르면 SMAPI가 출력한 경로를 기준으로 설치하세요.
 
-설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.9`가 보이면 정상입니다.
+설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.10`이 보이면 정상입니다.
 
 ## Gemini API 키
 
@@ -103,6 +103,21 @@ pms_work animals on|off
 /pms_todo
 /pms_work
 ```
+
+## 인게임 빠른 설정
+
+ESC 메뉴를 열면 기본 메뉴 탭 오른쪽에 `P`로 표시된 Pumasi 탭이 추가됩니다. 이 탭은 Generic Mod Config Menu가 없어도 사용할 수 있는 빠른 설정 화면입니다.
+
+현재 Pumasi 탭에서 바꿀 수 있는 항목:
+
+- 투두 보드 표시.
+- 도우미 알림 표시.
+- 작물, 기계, 동물, 상자, 씨앗 심기 작업 카테고리.
+- 한국어 위키 답변 사용 여부.
+
+설정은 클릭 즉시 `Mods/Pumasi/config.json`에 저장됩니다. 멀티플레이 게스트는 로컬 UI 설정만 바꿀 수 있고, 작업 카테고리와 위키 답변 같은 호스트 권한 설정은 호스트가 바꿔야 실제 실행에 반영됩니다.
+
+도우미 이름, 행동 규칙, Gemini API 키 같은 텍스트 설정은 현재 버전에서는 Generic Mod Config Menu, `config.json`, 또는 SMAPI 콘솔의 `pms_key`를 사용합니다.
 
 ## 싱글 플레이 사용
 
@@ -219,7 +234,7 @@ pms_work animals on
 
 ## 문제 해결
 
-- SMAPI가 Generic Mod Config Menu가 없다고 표시해도 `config.json`, SMAPI 콘솔 명령어, `/pms` 채팅 명령어로 사용할 수 있습니다.
+- SMAPI가 Generic Mod Config Menu가 없다고 표시해도 Pumasi 메뉴 탭, `config.json`, SMAPI 콘솔 명령어, `/pms` 채팅 명령어로 사용할 수 있습니다.
 - Gemini 답변이 실패하면 `pms_status`를 실행해서 `geminiConfigured=True`인지 확인하세요.
 - 게스트 명령이 반응하지 않으면 호스트와 게스트 모두 같은 pumasi 모드를 설치했는지 확인하세요.
 - 업데이트 후 채팅 명령이 작동하지 않으면 Stardew Valley/SMAPI를 재시작해서 새 DLL을 로드하세요.

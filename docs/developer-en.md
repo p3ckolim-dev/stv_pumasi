@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.9`
+Current mod version: `0.1.10`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.9.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.10.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -73,6 +73,7 @@ SMAPI prints the exact `Mods go here:` path at startup. Prefer that path when te
 - SMAPI console commands.
 - Stardew chat commands through `ChatCommands.Register`.
 - Multiplayer message routing.
+- The Pumasi quick settings tab in the ESC/game menu.
 - Gemini planning and wiki-grounded answer flows.
 
 `TaskManager` owns the todo queue, preserves explicit visible todo order, supports host-side active todo reordering, and deduplicates active work with task keys.
@@ -116,6 +117,12 @@ Command parsing is centralized in `Pumasi.Core.Commands.PumasiCommandParser`. Ch
 Todo board `^` / `v` button clicks are handled through the SMAPI input event and call the existing `TaskManager.MoveActiveTask` path. This is host-only and shares the same validation rules as command-based reorder operations.
 
 Todo execution is top-to-bottom by visible queue order. Morning farm scans enqueue up to `Assistant.MorningTodoLimit` safe tasks by default, and user/AI-planned tasks append to the bottom unless the host reorders them.
+
+## In-Game Menu UI
+
+`PumasiSettingsPage` is a quick settings page appended to Stardew `GameMenu.pages`. Vanilla `GameMenu.getTabNumberFromName` only knows vanilla tab names, so Pumasi does not directly add a custom tab to `GameMenu.tabs`. Instead, it draws a `P` tab in `RenderedActiveMenu` and detects clicks through the SMAPI input event, then switches `currentTab` to the Pumasi page index.
+
+The setting order is owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `PumasiSettingsCatalogTests` verifies the row order and labels.
 
 ## AI And Wiki Flow
 

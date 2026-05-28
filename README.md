@@ -4,7 +4,7 @@ Quick links: [User EN](docs/user-en.md) | [User KO](docs/user-ko.md) | [Develope
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It provides a host-authoritative helper concept that can answer Stardew Valley questions, keep a shared todo list, and execute a small set of safe repetitive farm chores.
 
-Current mod version: `0.1.9`
+Current mod version: `0.1.10`
 
 ## Name Origin / 이름의 유래
 
@@ -37,6 +37,7 @@ Choose the page that matches what you want to do:
 - In multiplayer, the host owns AI calls, task queue mutation, and world-changing behavior.
 - Guests can send helper requests to the host.
 - Helper answers are shown in the in-game chat.
+- A Pumasi tab in the Stardew Valley game menu provides quick checkbox settings.
 - Gemini is used for task planning and wiki-grounded answer generation.
 - Stardew Valley information answers are grounded with the Korean Stardew Valley Wiki.
 - Current task execution supports crop watering, crop harvesting, ready machine collection, sprinkler-area tilling, and animal building hay refill.

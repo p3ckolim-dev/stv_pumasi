@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Pumasi.Core.Ai;
 using Pumasi.Core.Chat;
 using Pumasi.Core.Commands;
@@ -28,6 +29,8 @@ public sealed class ModEntry : Mod
 {
     private const string ChatCommandName = "p3ckolim.pms_pms";
     private const int ConversationHistoryLimit = 12;
+    private const string PumasiSettingsTabLabel = "Pumasi";
+    private const int PumasiSettingsTabSize = 64;
 
     private ConfigService configService = null!;
     private TaskManager taskManager = null!;
@@ -39,6 +42,9 @@ public sealed class ModEntry : Mod
     private HttpClient httpClient = null!;
     private WikiMemoryCache wikiCache = null!;
     private readonly List<ConversationTurn> conversationHistory = new();
+    private GameMenu? pumasiSettingsGameMenu;
+    private int pumasiSettingsTabIndex = -1;
+    private Rectangle pumasiSettingsTabBounds = Rectangle.Empty;
     private int executionCooldownTicks;
     private DateTimeOffset lastWikiQuestionAt = DateTimeOffset.MinValue;
     private bool chatCommandsRegistered;
@@ -59,7 +65,9 @@ public sealed class ModEntry : Mod
         helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         helper.Events.GameLoop.DayStarted += OnDayStarted;
         helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        helper.Events.Display.MenuChanged += OnMenuChanged;
         helper.Events.Display.RenderedHud += OnRenderedHud;
+        helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
 
         helper.ConsoleCommands.Add("pms_status", "Show pumasi (품앗이) status.", OnStatusCommand);
@@ -153,9 +161,31 @@ public sealed class ModEntry : Mod
         overlay.Draw(e.SpriteBatch, snapshot, helperState, multiplayer.LatestHelperState);
     }
 
+    private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
+    {
+        if (e.NewMenu is GameMenu gameMenu)
+        {
+            InjectPumasiSettingsPage(gameMenu);
+            return;
+        }
+
+        pumasiSettingsGameMenu = null;
+        pumasiSettingsTabIndex = -1;
+        pumasiSettingsTabBounds = Rectangle.Empty;
+    }
+
+    private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
+    {
+        if (Game1.activeClickableMenu is GameMenu gameMenu && IsInjectedPumasiSettingsMenu(gameMenu))
+            DrawPumasiSettingsTab(e.SpriteBatch, gameMenu);
+    }
+
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
         if (!Context.IsWorldReady)
+            return;
+
+        if (e.Button == SButton.MouseLeft && TryOpenPumasiSettingsTab(e))
             return;
 
         if (string.Equals(e.Button.ToString(), Config.Ui.ToggleOverlayButton, StringComparison.OrdinalIgnoreCase))
@@ -173,6 +203,119 @@ public sealed class ModEntry : Mod
                 Helper.Input.Suppress(e.Button);
             }
         }
+    }
+
+    private void InjectPumasiSettingsPage(GameMenu gameMenu)
+    {
+        var pageIndex = gameMenu.pages.FindIndex(page => page is PumasiSettingsPage);
+        if (pageIndex < 0)
+        {
+            pageIndex = gameMenu.pages.Count;
+            gameMenu.pages.Add(new PumasiSettingsPage(
+                gameMenu.xPositionOnScreen,
+                gameMenu.yPositionOnScreen,
+                gameMenu.width,
+                gameMenu.height,
+                Config,
+                () => Context.IsMainPlayer,
+                configService.Save,
+                OnPumasiSettingsChanged));
+        }
+
+        pumasiSettingsGameMenu = gameMenu;
+        pumasiSettingsTabIndex = pageIndex;
+        pumasiSettingsTabBounds = CreatePumasiSettingsTabBounds(gameMenu);
+    }
+
+    private bool TryOpenPumasiSettingsTab(ButtonPressedEventArgs e)
+    {
+        if (Game1.activeClickableMenu is not GameMenu gameMenu || !IsInjectedPumasiSettingsMenu(gameMenu))
+            return false;
+
+        var cursor = e.Cursor.GetScaledScreenPixels();
+        if (!pumasiSettingsTabBounds.Contains((int)cursor.X, (int)cursor.Y))
+            return false;
+
+        if (gameMenu.currentTab >= 0
+            && gameMenu.currentTab < gameMenu.pages.Count
+            && !gameMenu.pages[gameMenu.currentTab].readyToClose())
+        {
+            return false;
+        }
+
+        OpenPumasiSettingsTab(gameMenu);
+        Helper.Input.Suppress(e.Button);
+        return true;
+    }
+
+    private void OpenPumasiSettingsTab(GameMenu gameMenu)
+    {
+        gameMenu.currentTab = pumasiSettingsTabIndex;
+        gameMenu.invisible = false;
+        gameMenu.width = 800 + IClickableMenu.borderWidth * 2;
+        gameMenu.initializeUpperRightCloseButton();
+        gameMenu.pages[pumasiSettingsTabIndex].populateClickableComponentList();
+        gameMenu.AddTabsToClickableComponents(gameMenu.pages[pumasiSettingsTabIndex]);
+        gameMenu.setTabNeighborsForCurrentPage();
+        if (Game1.options.SnappyMenus)
+            gameMenu.snapToDefaultClickableComponent();
+
+        Game1.playSound("smallSelect");
+    }
+
+    private void OnPumasiSettingsChanged()
+    {
+        overlay.Visible = Config.Ui.ShowTodoOverlay;
+        helperState.Name = Config.Assistant.Name;
+        BroadcastState();
+    }
+
+    private bool IsInjectedPumasiSettingsMenu(GameMenu gameMenu)
+    {
+        return ReferenceEquals(pumasiSettingsGameMenu, gameMenu)
+            && pumasiSettingsTabIndex >= 0
+            && pumasiSettingsTabIndex < gameMenu.pages.Count
+            && gameMenu.pages[pumasiSettingsTabIndex] is PumasiSettingsPage;
+    }
+
+    private static Rectangle CreatePumasiSettingsTabBounds(GameMenu gameMenu)
+    {
+        var exitTab = gameMenu.tabs.FirstOrDefault(tab => tab.name == "exit");
+        if (exitTab is not null)
+            return new Rectangle(exitTab.bounds.Right, exitTab.bounds.Y, exitTab.bounds.Width, exitTab.bounds.Height);
+
+        return new Rectangle(
+            gameMenu.xPositionOnScreen + 704,
+            gameMenu.yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + PumasiSettingsTabSize,
+            PumasiSettingsTabSize,
+            PumasiSettingsTabSize);
+    }
+
+    private void DrawPumasiSettingsTab(SpriteBatch spriteBatch, GameMenu gameMenu)
+    {
+        var yOffset = gameMenu.currentTab == pumasiSettingsTabIndex ? 8 : 0;
+        var position = new Vector2(pumasiSettingsTabBounds.X, pumasiSettingsTabBounds.Y + yOffset);
+        spriteBatch.Draw(
+            Game1.mouseCursors,
+            position,
+            new Rectangle(96, 368, 16, 16),
+            Color.White,
+            0f,
+            Vector2.Zero,
+            4f,
+            SpriteEffects.None,
+            0.0001f);
+
+        var label = "P";
+        var labelSize = Game1.smallFont.MeasureString(label);
+        var labelPosition = new Vector2(
+            pumasiSettingsTabBounds.X + (pumasiSettingsTabBounds.Width - labelSize.X) / 2f,
+            pumasiSettingsTabBounds.Y + yOffset + 17);
+        spriteBatch.DrawString(Game1.smallFont, label, labelPosition + new Vector2(1, 1), Color.White * 0.55f);
+        spriteBatch.DrawString(Game1.smallFont, label, labelPosition, Color.DarkGreen);
+
+        if (pumasiSettingsTabBounds.Contains(Game1.getMouseX(), Game1.getMouseY()))
+            IClickableMenu.drawHoverText(spriteBatch, PumasiSettingsTabLabel, Game1.smallFont);
     }
 
     private void OnStatusCommand(string command, string[] args)
