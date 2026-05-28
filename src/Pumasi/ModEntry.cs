@@ -5,6 +5,7 @@ using Pumasi.Core.Commands;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Knowledge;
 using Pumasi.Core.Tasks;
+using Pumasi.Core.Ui;
 using Pumasi.Game;
 using Pumasi.Multiplayer;
 using Pumasi.Services;
@@ -64,6 +65,7 @@ public sealed class ModEntry : Mod
         helper.ConsoleCommands.Add("pms_ask", "Ask pumasi to answer a wiki question or plan safe farm work. Usage: pms_ask <instruction>", OnAskCommand);
         helper.ConsoleCommands.Add("pms_key", "Host local only: set Gemini API key. Usage: pms_key <key>", OnApiKeyCommand);
         helper.ConsoleCommands.Add("pms_todo", "Show or reorder current todo list. Usage: pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]", OnTodoCommand);
+        helper.ConsoleCommands.Add("pms_work", "Host only: toggle work categories. Usage: pms_work animals on|off", OnWorkCommand);
     }
 
     private ModConfig Config => configService.Config;
@@ -91,8 +93,8 @@ public sealed class ModEntry : Mod
             ChatCommands.Register(
                 ChatCommandName,
                 OnPmsChatCommand,
-                _ => "/pms status | /pms scan | /pms todo [move/up/down] | /pms ask <질문/작업> | /pms <질문/작업>",
-                new[] { "pms", "pms_ask", "pms_status", "pms_scan", "pms_todo", "pms_key" },
+                _ => "/pms status | /pms scan | /pms todo [move/up/down] | /pms animals on|off | /pms ask <질문/작업>",
+                new[] { "pms", "pms_ask", "pms_status", "pms_scan", "pms_todo", "pms_work", "pms_key" },
                 mainOnly: false,
                 multiplayerOnly: false,
                 cheatsOnly: false);
@@ -155,7 +157,20 @@ public sealed class ModEntry : Mod
             return;
 
         if (string.Equals(e.Button.ToString(), Config.Ui.ToggleOverlayButton, StringComparison.OrdinalIgnoreCase))
+        {
             overlay.Visible = !overlay.Visible;
+            return;
+        }
+
+        if (e.Button == SButton.MouseLeft && Context.IsMainPlayer)
+        {
+            var cursor = e.Cursor.GetScaledScreenPixels();
+            if (overlay.TryResolveReorderClick((int)cursor.X, (int)cursor.Y, out var move))
+            {
+                MoveTodoFromOverlay(move);
+                Helper.Input.Suppress(e.Button);
+            }
+        }
     }
 
     private void OnStatusCommand(string command, string[] args)
@@ -197,6 +212,11 @@ public sealed class ModEntry : Mod
         RunPumasiCommand(new PumasiCommand(PumasiCommandKind.Todo, string.Join(" ", args)), CommandSurface.Console);
     }
 
+    private void OnWorkCommand(string command, string[] args)
+    {
+        RunPumasiCommand(new PumasiCommand(PumasiCommandKind.WorkCategory, string.Join(" ", args)), CommandSurface.Console);
+    }
+
     private void RunPumasiCommand(PumasiCommand command, CommandSurface surface)
     {
         switch (command.Kind)
@@ -217,8 +237,12 @@ public sealed class ModEntry : Mod
                 ShowTodoList(command.Argument, surface);
                 break;
 
+            case PumasiCommandKind.WorkCategory:
+                SetWorkCategory(command.Argument, surface);
+                break;
+
             case PumasiCommandKind.Help:
-                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms todo move 3 1, /pms ask <질문/작업>, /pms <질문/작업>", surface);
+                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms todo move 3 1, /pms animals on|off, /pms ask <질문/작업>, /pms <질문/작업>", surface);
                 break;
 
             case PumasiCommandKind.ApiKeyRejected:
@@ -315,6 +339,55 @@ public sealed class ModEntry : Mod
         BroadcastState();
     }
 
+    private void MoveTodoFromOverlay(TodoReorderMove move)
+    {
+        var result = taskManager.MoveActiveTask(move.FromPosition, move.ToPosition);
+        var message = result.Moved
+            ? result.Reason == "no-change" ? "Todo order unchanged." : $"Moved todo #{move.FromPosition} to #{move.ToPosition}."
+            : $"Todo reorder failed: {result.Reason}";
+
+        helperState.Status = message;
+        Monitor.Log(message, result.Moved ? LogLevel.Info : LogLevel.Warn);
+        Game1.addHUDMessage(new HUDMessage(message));
+        BroadcastState();
+    }
+
+    private void SetWorkCategory(string argument, CommandSurface surface)
+    {
+        if (!RequireHost(surface))
+            return;
+
+        var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            SendCommandFeedback(BuildWorkCategoryStatus(), surface);
+            return;
+        }
+
+        if (!TryResolveWorkCategory(parts[0], out var categoryName, out var getter, out var setter))
+        {
+            SendCommandFeedback("Work category usage: /pms animals on|off 또는 /pms work animals on|off. Categories: crops, machines, animals, chests, planting.", surface, LogLevel.Warn);
+            return;
+        }
+
+        if (parts.Length == 1)
+        {
+            SendCommandFeedback($"{categoryName}={FormatOnOff(getter())}", surface);
+            return;
+        }
+
+        if (!TryParseOnOff(parts[1], out var enabled))
+        {
+            SendCommandFeedback("Use on/off, enable/disable, true/false, 또는 켜/꺼.", surface, LogLevel.Warn);
+            return;
+        }
+
+        setter(enabled);
+        configService.Save();
+        BroadcastState();
+        SendCommandFeedback($"{categoryName} 작업 카테고리를 {FormatOnOff(enabled)} 상태로 저장했어요.", surface);
+    }
+
     private static bool TryResolveTodoMove(string[] parts, int visibleCount, out int from, out int to, out string error)
     {
         from = 0;
@@ -363,6 +436,99 @@ public sealed class ModEntry : Mod
     private string BuildStatusMessage()
     {
         return $"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}";
+    }
+
+    private string BuildWorkCategoryStatus()
+    {
+        var categories = Config.Assistant.WorkCategories;
+        return $"work: crops={FormatOnOff(categories.Crops)}, machines={FormatOnOff(categories.Machines)}, animals={FormatOnOff(categories.Animals)}, chests={FormatOnOff(categories.Chests)}, planting={FormatOnOff(categories.Planting)}";
+    }
+
+    private bool TryResolveWorkCategory(
+        string value,
+        out string categoryName,
+        out Func<bool> getter,
+        out Action<bool> setter)
+    {
+        var categories = Config.Assistant.WorkCategories;
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "crops":
+            case "crop":
+                categoryName = "crops";
+                getter = () => categories.Crops;
+                setter = enabled => categories.Crops = enabled;
+                return true;
+
+            case "machines":
+            case "machine":
+                categoryName = "machines";
+                getter = () => categories.Machines;
+                setter = enabled => categories.Machines = enabled;
+                return true;
+
+            case "animals":
+            case "animal":
+                categoryName = "animals";
+                getter = () => categories.Animals;
+                setter = enabled => categories.Animals = enabled;
+                return true;
+
+            case "chests":
+            case "chest":
+                categoryName = "chests";
+                getter = () => categories.Chests;
+                setter = enabled => categories.Chests = enabled;
+                return true;
+
+            case "planting":
+            case "plant":
+                categoryName = "planting";
+                getter = () => categories.Planting;
+                setter = enabled => categories.Planting = enabled;
+                return true;
+
+            default:
+                categoryName = string.Empty;
+                getter = () => false;
+                setter = _ => { };
+                return false;
+        }
+    }
+
+    private static bool TryParseOnOff(string value, out bool enabled)
+    {
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "on":
+            case "enable":
+            case "enabled":
+            case "true":
+            case "1":
+            case "켜":
+            case "켜기":
+                enabled = true;
+                return true;
+
+            case "off":
+            case "disable":
+            case "disabled":
+            case "false":
+            case "0":
+            case "꺼":
+            case "끄기":
+                enabled = false;
+                return true;
+
+            default:
+                enabled = false;
+                return false;
+        }
+    }
+
+    private static string FormatOnOff(bool enabled)
+    {
+        return enabled ? "on" : "off";
     }
 
     private bool RequireHost(CommandSurface surface = CommandSurface.Console)

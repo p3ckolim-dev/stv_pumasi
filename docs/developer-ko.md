@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.7`
+현재 모드 버전: `0.1.8`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.7.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.8.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -95,6 +95,7 @@ pms_scan
 pms_ask <질문 또는 농장 작업 요청>
 pms_key <gemini-api-key>
 pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
+pms_work <category> on|off
 ```
 
 채팅 명령:
@@ -104,11 +105,15 @@ pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
 /pms scan
 /pms todo
 /pms todo move 3 1
+/pms animals on
+/pms work animals off
 /pms ask <질문 또는 농장 작업 요청>
 /pms <질문 또는 농장 작업 요청>
 ```
 
 명령 파싱은 `Pumasi.Core.Commands.PumasiCommandParser`에 모여 있습니다. 인게임 채팅을 통한 키 입력은 설계상 거부되므로, 비밀값은 채팅 경로에서 받지 않습니다.
+
+투두 보드의 `^` / `v` 버튼 클릭은 SMAPI 입력 이벤트에서 감지한 뒤 기존 `TaskManager.MoveActiveTask`를 호출합니다. 이 경로도 호스트 전용이며, 명령어 기반 순서 조정과 같은 검증 규칙을 공유합니다.
 
 투두 실행은 보이는 큐 순서대로 맨 위부터 진행됩니다. 아침 농장 스캔은 기본적으로 `Assistant.MorningTodoLimit`만큼 안전 작업을 큐에 추가하고, 유저/AI 계획 작업은 호스트가 순서를 조정하지 않는 한 맨 아래에 추가됩니다.
 

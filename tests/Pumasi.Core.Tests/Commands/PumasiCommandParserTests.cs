@@ -35,6 +35,18 @@ public sealed class PumasiCommandParserTests
     }
 
     [Theory]
+    [InlineData("/pms animals on", "animals on")]
+    [InlineData("/pms work animals off", "animals off")]
+    [InlineData("/pms_work animals on", "animals on")]
+    public void ParseChatInput_RoutesWorkCategoryCommands(string input, string expectedArgument)
+    {
+        var command = PumasiCommandParser.ParseChatInput(input);
+
+        Assert.Equal(PumasiCommandKind.WorkCategory, command.Kind);
+        Assert.Equal(expectedArgument, command.Argument);
+    }
+
+    [Theory]
     [InlineData("/pms status", PumasiCommandKind.Status)]
     [InlineData("/pms_status", PumasiCommandKind.Status)]
     [InlineData("/pms scan", PumasiCommandKind.Scan)]

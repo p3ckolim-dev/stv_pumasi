@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <EnableModDeploy>false</EnableModDeploy>
+    <IgnoreModFilePatterns>assets[/\\]pumasi-bot-joseon-farmer.*</IgnoreModFilePatterns>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,9 @@
   <ItemGroup>
     <None Update="manifest.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="assets/helper.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="assets/pumasi-bot-joseon-farmer-frames/**" />
+    <None Remove="assets/pumasi-bot-joseon-farmer-spritesheet*.png" />
+    <None Remove="assets/pumasi-bot-joseon-farmer-spritesheet.json" />
   </ItemGroup>
 
   <ItemGroup>

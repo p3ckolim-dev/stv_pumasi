@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.7`
+Current mod version: `0.1.8`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.7` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.8` among loaded mods.
 
 ## Gemini API Key
 
@@ -78,6 +78,7 @@ pms_scan
 pms_ask <question or farm-work request>
 pms_key <gemini-api-key>
 pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
+pms_work animals on|off
 ```
 
 In-game chat commands:
@@ -87,6 +88,8 @@ In-game chat commands:
 /pms scan
 /pms todo
 /pms todo move 3 1
+/pms animals on
+/pms work animals off
 /pms ask <question or farm-work request>
 /pms <question or farm-work request>
 ```
@@ -98,6 +101,7 @@ Chat aliases:
 /pms_status
 /pms_scan
 /pms_todo
+/pms_work
 ```
 
 ## Single-Player Use
@@ -195,10 +199,21 @@ Todo order commands are host-only:
 /pms todo bottom 1
 ```
 
+The host can also click the `^` / `v` buttons on the right side of each todo board row to move that todo up or down. Guests can view the board, but cannot reorder it.
+
+The host can toggle work categories from chat or the SMAPI console:
+
+```text
+/pms animals on
+/pms animals off
+/pms work animals on
+pms_work animals on
+```
+
 Current limitations:
 
 - No full vanilla-style NPC schedule, friendship, gifts, events, or social behavior yet.
-- No planting, selling, destroying, moving rare items, animal care, or chest management execution yet.
+- No planting, selling, destroying, moving rare items, detailed animal care like petting/product collection, or chest management execution yet.
 - Some settings exist before their executor exists because the MVP is being built incrementally.
 
 ## Troubleshooting

@@ -20,11 +20,26 @@ internal sealed class TodoOverlay
     private static readonly Color BoardParchmentShade = new(169, 111, 43, 90);
     private static readonly Color TitleText = new(38, 105, 45);
     private static readonly Color BodyText = new(86, 53, 27);
+    private static readonly Color ButtonFill = new(126, 70, 24, 235);
+    private static readonly Color ButtonText = new(255, 236, 177);
+
+    private IReadOnlyList<TodoReorderControl> reorderControls = Array.Empty<TodoReorderControl>();
 
     public bool Visible { get; set; } = true;
 
+    public bool TryResolveReorderClick(int x, int y, out TodoReorderMove move)
+    {
+        if (Visible)
+            return TodoOverlayLayout.TryResolveReorderClick(reorderControls, x, y, out move);
+
+        move = new TodoReorderMove(0, 0);
+        return false;
+    }
+
     public void Draw(SpriteBatch spriteBatch, TodoSnapshot snapshot, HelperRuntimeState localState, HelperStateMessage? syncedState)
     {
+        reorderControls = Array.Empty<TodoReorderControl>();
+
         if (!Visible || !Context.IsWorldReady)
             return;
 
@@ -39,6 +54,10 @@ internal sealed class TodoOverlay
             .ToArray();
         var panel = TodoOverlayLayout.Create(visibleItems.Length, lineHeight, Game1.uiViewport.Width, Game1.uiViewport.Height);
         var position = new Vector2(panel.TextX, panel.TextY);
+        var canReorder = Context.IsMainPlayer && visibleItems.Length > 1;
+        if (canReorder)
+            reorderControls = TodoOverlayLayout.CreateReorderControls(panel, visibleItems.Length, lineHeight);
+        var textWidth = GetTodoTextWidth(panel, reorderControls);
 
         DrawBoard(spriteBatch, panel);
         DrawShadowedText(spriteBatch, $"{stateName}: {status}", position, TitleText);
@@ -54,7 +73,8 @@ internal sealed class TodoOverlay
         {
             var item = visibleItems[i];
             var text = $"#{i + 1} [{item.Status}] {item.Type} {item.Location}({item.X},{item.Y})";
-            DrawShadowedText(spriteBatch, TrimToWidth(text, panel.InnerWidth), position, BodyText);
+            DrawShadowedText(spriteBatch, TrimToWidth(text, textWidth), position, BodyText);
+            DrawReorderControls(spriteBatch, reorderControls.Where(control => control.FromPosition == i + 1));
             position.Y += lineHeight;
         }
     }
@@ -75,6 +95,35 @@ internal sealed class TodoOverlay
     private static void DrawRectangle(SpriteBatch spriteBatch, Rectangle bounds, Color color)
     {
         spriteBatch.Draw(Game1.staminaRect, bounds, color);
+    }
+
+    private static int GetTodoTextWidth(TodoOverlayPanel panel, IReadOnlyList<TodoReorderControl> controls)
+    {
+        if (controls.Count == 0)
+            return panel.InnerWidth;
+
+        return Math.Max(120, controls.Min(control => control.Bounds.X) - panel.TextX - 8);
+    }
+
+    private static void DrawReorderControls(SpriteBatch spriteBatch, IEnumerable<TodoReorderControl> controls)
+    {
+        foreach (var control in controls)
+            DrawReorderControl(spriteBatch, control);
+    }
+
+    private static void DrawReorderControl(SpriteBatch spriteBatch, TodoReorderControl control)
+    {
+        var bounds = new Rectangle(control.Bounds.X, control.Bounds.Y, control.Bounds.Width, control.Bounds.Height);
+        DrawRectangle(spriteBatch, bounds, BoardEdge);
+        DrawRectangle(spriteBatch, new Rectangle(bounds.X + 2, bounds.Y + 2, bounds.Width - 4, bounds.Height - 4), ButtonFill);
+
+        var label = control.Direction == TodoReorderDirection.Up ? "^" : "v";
+        var size = Game1.smallFont.MeasureString(label);
+        var position = new Vector2(
+            bounds.X + (bounds.Width - size.X) / 2f,
+            bounds.Y + (bounds.Height - size.Y) / 2f - 2f);
+        spriteBatch.DrawString(Game1.smallFont, label, position + new Vector2(1, 1), Color.Black * 0.45f);
+        spriteBatch.DrawString(Game1.smallFont, label, position, ButtonText);
     }
 
     private static void DrawShadowedText(SpriteBatch spriteBatch, string text, Vector2 position, Color color)

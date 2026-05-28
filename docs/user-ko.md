@@ -4,7 +4,7 @@
 
 `pumasi` (`pms`, 한글 이름: `품앗이`)는 Stardew Valley용 SMAPI 모드 프로토타입입니다. 질문에 답하고, 투두 목록을 관리하고, 제한된 범위의 안전한 반복 농장 작업을 수행하는 도우미를 제공합니다.
 
-현재 모드 버전: `0.1.7`
+현재 모드 버전: `0.1.8`
 
 ## 이 문서의 대상
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI는 시작할 때 정확한 `Mods go here:` 경로를 출력합니다. 위 예시와 다르면 SMAPI가 출력한 경로를 기준으로 설치하세요.
 
-설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.7`가 보이면 정상입니다.
+설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.8`가 보이면 정상입니다.
 
 ## Gemini API 키
 
@@ -78,6 +78,7 @@ pms_scan
 pms_ask <질문 또는 농장 작업 요청>
 pms_key <gemini-api-key>
 pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
+pms_work animals on|off
 ```
 
 인게임 채팅 명령어:
@@ -87,6 +88,8 @@ pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
 /pms scan
 /pms todo
 /pms todo move 3 1
+/pms animals on
+/pms work animals off
 /pms ask <질문 또는 농장 작업 요청>
 /pms <질문 또는 농장 작업 요청>
 ```
@@ -98,6 +101,7 @@ pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
 /pms_status
 /pms_scan
 /pms_todo
+/pms_work
 ```
 
 ## 싱글 플레이 사용
@@ -195,10 +199,21 @@ Pumasi: 딸기 씨앗은 봄 달걀 축제에서 살 수 있어요.
 /pms todo bottom 1
 ```
 
+호스트는 투두 보드의 각 항목 오른쪽에 있는 `^` / `v` 버튼을 클릭해서도 순서를 올리거나 내릴 수 있습니다. 게스트는 보드를 볼 수 있지만 순서는 바꿀 수 없습니다.
+
+작업 카테고리도 호스트가 채팅이나 SMAPI 콘솔에서 바꿀 수 있습니다.
+
+```text
+/pms animals on
+/pms animals off
+/pms work animals on
+pms_work animals on
+```
+
 현재 한계:
 
 - 아직 바닐라 NPC 수준의 일정, 호감도, 선물, 이벤트, 사회적 행동은 없습니다.
-- 씨앗 심기, 판매, 파괴, 희귀 아이템 이동, 동물 돌보기, 상자 관리는 아직 실행 범위가 아닙니다.
+- 씨앗 심기, 판매, 파괴, 희귀 아이템 이동, 쓰다듬기/생산품 수거 같은 세부 동물 돌보기, 상자 관리는 아직 실행 범위가 아닙니다.
 - 일부 설정은 이후 기능 확장을 위해 먼저 존재하며, 해당 실행기가 아직 없을 수 있습니다.
 
 ## 문제 해결

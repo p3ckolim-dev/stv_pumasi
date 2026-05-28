@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.7`
+Current mod version: `0.1.8`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.7.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.8.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -95,6 +95,7 @@ pms_scan
 pms_ask <question or farm-work request>
 pms_key <gemini-api-key>
 pms_todo [move <from> <to>|up <index>|down <index>|top <index>|bottom <index>]
+pms_work <category> on|off
 ```
 
 Chat commands:
@@ -104,11 +105,15 @@ Chat commands:
 /pms scan
 /pms todo
 /pms todo move 3 1
+/pms animals on
+/pms work animals off
 /pms ask <question or farm-work request>
 /pms <question or farm-work request>
 ```
 
 Command parsing is centralized in `Pumasi.Core.Commands.PumasiCommandParser`. Chat key input is rejected by design, so secrets are not accepted through in-game chat.
+
+Todo board `^` / `v` button clicks are handled through the SMAPI input event and call the existing `TaskManager.MoveActiveTask` path. This is host-only and shares the same validation rules as command-based reorder operations.
 
 Todo execution is top-to-bottom by visible queue order. Morning farm scans enqueue up to `Assistant.MorningTodoLimit` safe tasks by default, and user/AI-planned tasks append to the bottom unless the host reorders them.
 

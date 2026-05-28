@@ -7,6 +7,7 @@ public enum PumasiCommandKind
     Status,
     Scan,
     Todo,
+    WorkCategory,
     Help,
     ApiKeyRejected
 }

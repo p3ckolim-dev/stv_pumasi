@@ -19,6 +19,7 @@ public static class PumasiCommandParser
             "pms_status" => new PumasiCommand(PumasiCommandKind.Status, string.Empty),
             "pms_scan" => new PumasiCommand(PumasiCommandKind.Scan, string.Empty),
             "pms_todo" => CreateTodo(args),
+            "pms_work" => CreateWorkCategory(args),
             "pms_key" => new PumasiCommand(PumasiCommandKind.ApiKeyRejected, string.Empty),
             _ => PumasiCommand.None
         };
@@ -38,6 +39,8 @@ public static class PumasiCommandParser
             "status" => new PumasiCommand(PumasiCommandKind.Status, string.Empty),
             "scan" => new PumasiCommand(PumasiCommandKind.Scan, string.Empty),
             "todo" or "todos" or "list" => CreateTodo(rest),
+            "work" or "category" or "categories" or "config" => CreateWorkCategory(rest),
+            "crops" or "crop" or "machines" or "machine" or "animals" or "animal" or "chests" or "chest" or "planting" or "plant" => CreateWorkCategory(parts),
             "help" or "?" => new PumasiCommand(PumasiCommandKind.Help, string.Empty),
             "key" or "apikey" or "api_key" or "gemini_key" => new PumasiCommand(PumasiCommandKind.ApiKeyRejected, string.Empty),
             _ => CreateAsk(parts, defaultToSafeChores: false)
@@ -62,6 +65,13 @@ public static class PumasiCommandParser
             string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim());
     }
 
+    private static PumasiCommand CreateWorkCategory(IReadOnlyCollection<string> parts)
+    {
+        return new PumasiCommand(
+            PumasiCommandKind.WorkCategory,
+            string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim().ToLowerInvariant());
+    }
+
     private static string NormalizeCommandName(string commandName)
     {
         var normalized = commandName.Trim().TrimStart('/').ToLowerInvariant();
@@ -74,6 +84,7 @@ public static class PumasiCommandParser
                 "status" => "pms_status",
                 "scan" => "pms_scan",
                 "todo" => "pms_todo",
+                "work" => "pms_work",
                 "key" => "pms_key",
                 _ => normalized
             };
