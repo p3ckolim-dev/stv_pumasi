@@ -44,4 +44,37 @@ public sealed class GeminiPlannerTests
         Assert.False(result.Success);
         Assert.Equal("gemini-response-did-not-contain-json-object", result.Error);
     }
+
+    [Fact]
+    public void ParsePlan_ExtractsSprinklerTillingAndHayRefillTasks()
+    {
+        var result = GeminiPlanner.ParsePlan(
+            "{\n" +
+            "  \"message\": \"새 작업을 추가할게요.\",\n" +
+            "  \"tasks\": [\n" +
+            "    {\n" +
+            "      \"type\": \"TillSprinklerSoil\",\n" +
+            "      \"location\": \"Farm\",\n" +
+            "      \"tile\": { \"x\": 40, \"y\": 18 },\n" +
+            "      \"priority\": 55,\n" +
+            "      \"reason\": \"스프링클러 주변 일반 땅\",\n" +
+            "      \"source\": \"gemini\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"type\": \"RefillHay\",\n" +
+            "      \"location\": \"Barn\",\n" +
+            "      \"tile\": { \"x\": 0, \"y\": 0 },\n" +
+            "      \"priority\": 65,\n" +
+            "      \"reason\": \"건초 리필\",\n" +
+            "      \"source\": \"gemini\"\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}");
+
+        Assert.True(result.Success);
+        Assert.Collection(
+            result.Tasks,
+            task => Assert.Equal(TaskType.TillSprinklerSoil, task.Type),
+            task => Assert.Equal(TaskType.RefillHay, task.Type));
+    }
 }

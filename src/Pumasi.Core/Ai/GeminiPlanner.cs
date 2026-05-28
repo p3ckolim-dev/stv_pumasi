@@ -66,6 +66,7 @@ public sealed class GeminiPlanner
             "You are the planning layer for pumasi (품앗이), a Stardew Valley farm helper mod.\n" +
             "Return only JSON. Do not include markdown.\n" +
             "Choose from the provided candidateTasks only. Never invent tiles or task types.\n" +
+            "Supported task types include HarvestCrop, WaterCrop, TillSprinklerSoil, CollectMachine, and RefillHay when those tasks appear in candidateTasks.\n" +
             "Schema:\n" +
             "{\n" +
             "  \"message\": \"short public helper message\",\n" +

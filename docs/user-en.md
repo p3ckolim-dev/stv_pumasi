@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.6`
+Current mod version: `0.1.7`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.6` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.7` among loaded mods.
 
 ## Gemini API Key
 
@@ -170,12 +170,16 @@ The current scanner supports:
 - Farm crops.
 - Greenhouse crops.
 - Ready machines on supported locations.
+- Untilled plain ground around sprinklers.
+- Animal building hay refill candidates when the `Animals` work category is enabled.
 
 The current executor supports:
 
 - Water dry crops.
 - Harvest ready crops.
 - Collect ready machines.
+- Till plain ground around sprinklers.
+- Refill hay in animal buildings.
 
 The helper processes one queued task at a time from the top of the visible todo list, like checking items off in order. User-requested tasks are appended to the bottom of the queue, so they wait behind existing work unless the host reorders them.
 

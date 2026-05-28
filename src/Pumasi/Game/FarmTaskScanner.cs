@@ -15,11 +15,17 @@ internal sealed class FarmTaskScanner
         foreach (var location in GetSupportedLocations())
         {
             if (config.Assistant.WorkCategories.Crops)
+            {
                 ScanCrops(location, proposals);
+                ScanSprinklerTilling(location, proposals);
+            }
 
             if (config.Assistant.WorkCategories.Machines)
                 ScanMachines(location, proposals);
         }
+
+        if (config.Assistant.WorkCategories.Animals)
+            ScanHayRefills(proposals);
 
         return proposals
             .OrderByDescending(task => task.Priority)
@@ -82,6 +88,79 @@ internal sealed class FarmTaskScanner
                 $"Ready {obj.Name}",
                 "scan"));
         }
+    }
+
+    private static void ScanSprinklerTilling(GameLocation location, List<TaskProposal> proposals)
+    {
+        foreach (var pair in location.objects.Pairs)
+        {
+            if (pair.Value is not SObject obj || !IsSprinkler(obj))
+                continue;
+
+            foreach (var offset in GetSprinklerOffsets(obj))
+            {
+                var tile = pair.Key + offset;
+                if (!IsPlainTillableTile(location, tile))
+                    continue;
+
+                proposals.Add(new TaskProposal(
+                    TaskType.TillSprinklerSoil,
+                    new TaskTarget(location.NameOrUniqueName, (int)tile.X, (int)tile.Y, ObjectName: obj.Name),
+                    45,
+                    $"Untilled soil near {obj.Name}",
+                    "scan"));
+            }
+        }
+    }
+
+    private static void ScanHayRefills(List<TaskProposal> proposals)
+    {
+        foreach (var location in Game1.locations.Where(IsAnimalHouse))
+        {
+            proposals.Add(new TaskProposal(
+                TaskType.RefillHay,
+                new TaskTarget(location.NameOrUniqueName, 0, 0, ObjectName: "Hay"),
+                65,
+                "Refill animal hay",
+                "scan"));
+        }
+    }
+
+    private static bool IsSprinkler(SObject obj)
+    {
+        return obj.Name.Contains("Sprinkler", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<Vector2> GetSprinklerOffsets(SObject sprinkler)
+    {
+        var radius = sprinkler.Name.Contains("Iridium", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
+        for (var x = -radius; x <= radius; x++)
+        {
+            for (var y = -radius; y <= radius; y++)
+            {
+                if (x == 0 && y == 0)
+                    continue;
+
+                if (radius == 1 && sprinkler.Name.Equals("Sprinkler", StringComparison.OrdinalIgnoreCase) && Math.Abs(x) + Math.Abs(y) != 1)
+                    continue;
+
+                yield return new Vector2(x, y);
+            }
+        }
+    }
+
+    private static bool IsPlainTillableTile(GameLocation location, Vector2 tile)
+    {
+        if (location.objects.ContainsKey(tile) || location.terrainFeatures.ContainsKey(tile))
+            return false;
+
+        var diggable = location.doesTileHaveProperty((int)tile.X, (int)tile.Y, "Diggable", "Back");
+        return !string.IsNullOrWhiteSpace(diggable);
+    }
+
+    private static bool IsAnimalHouse(GameLocation location)
+    {
+        return string.Equals(location.GetType().Name, "AnimalHouse", StringComparison.Ordinal);
     }
 
     private static bool IsReadyToHarvest(HoeDirt dirt)

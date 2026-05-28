@@ -33,7 +33,9 @@ internal sealed class FarmTaskExecutor
         {
             TaskType.WaterCrop => WaterCrop(location, task.Target),
             TaskType.HarvestCrop => HarvestCrop(location, task.Target),
+            TaskType.TillSprinklerSoil => TillSprinklerSoil(location, task.Target),
             TaskType.CollectMachine => CollectMachine(location, task.Target),
+            TaskType.RefillHay => RefillHay(location),
             _ => TaskExecutionResult.Skip("task-type-not-implemented-in-mvp")
         };
     }
@@ -88,6 +90,45 @@ internal sealed class FarmTaskExecutor
         return collected
             ? TaskExecutionResult.Complete("collected-machine")
             : TaskExecutionResult.Fail("machine-check-action-returned-false");
+    }
+
+    private static TaskExecutionResult TillSprinklerSoil(GameLocation location, TaskTarget target)
+    {
+        var tile = new Vector2(target.X, target.Y);
+        if (location.objects.ContainsKey(tile))
+            return TaskExecutionResult.Skip("tile-has-object");
+
+        if (location.terrainFeatures.TryGetValue(tile, out var feature))
+            return feature is HoeDirt
+                ? TaskExecutionResult.Skip("soil-already-tilled")
+                : TaskExecutionResult.Skip("tile-has-terrain-feature");
+
+        var diggable = location.doesTileHaveProperty(target.X, target.Y, "Diggable", "Back");
+        if (string.IsNullOrWhiteSpace(diggable))
+            return TaskExecutionResult.Skip("tile-not-diggable");
+
+        location.terrainFeatures.Add(tile, new HoeDirt());
+        return TaskExecutionResult.Complete("tilled-sprinkler-soil");
+    }
+
+    private static TaskExecutionResult RefillHay(GameLocation location)
+    {
+        if (!string.Equals(location.GetType().Name, "AnimalHouse", StringComparison.Ordinal))
+            return TaskExecutionResult.Skip("not-an-animal-house");
+
+        var method = location.GetType().GetMethod("feedAllAnimals", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Type.EmptyTypes);
+        if (method is null)
+            return TaskExecutionResult.Skip("hay-refill-method-not-found");
+
+        try
+        {
+            method.Invoke(location, null);
+            return TaskExecutionResult.Complete("refilled-hay");
+        }
+        catch (TargetInvocationException ex)
+        {
+            return TaskExecutionResult.Fail($"hay-refill-failed: {ex.InnerException?.Message ?? ex.Message}");
+        }
     }
 
     private static bool TryGetDirt(GameLocation location, TaskTarget target, out HoeDirt dirt)

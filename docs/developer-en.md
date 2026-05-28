@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.6`
+Current mod version: `0.1.7`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.6.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.7.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -164,16 +164,20 @@ Implemented execution:
 - Water dry crops.
 - Harvest ready crops.
 - Collect ready machines.
+- Till plain ground around sprinklers.
+- Refill hay in animal buildings.
 
 Scanner scope:
 
 - Farm.
 - Greenhouse.
+- Untilled plain ground around sprinklers.
+- Hay refill candidates in loaded animal buildings when the `Animals` work category is enabled.
 
 Not yet implemented:
 
 - Full NPC schedule, friendship, gifts, events, or social behavior.
-- Planting, selling, destroying, rare item movement, animal care, chest management.
+- Planting, selling, destroying, rare item movement, detailed animal care like petting/product collection, chest management.
 - Durable persistent todo storage beyond current runtime snapshots.
 - Permission UI for individual multiplayer guests.
 
