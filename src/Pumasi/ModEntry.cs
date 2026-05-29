@@ -187,6 +187,17 @@ public sealed class ModEntry : Mod
         if (e.Button == SButton.MouseLeft && TryOpenPumasiSettingsTab(e))
             return;
 
+        if (e.Button == SButton.MouseLeft)
+        {
+            var cursor = e.Cursor.GetScaledScreenPixels();
+            if (overlay.TryTogglePopupClick((int)cursor.X, (int)cursor.Y))
+            {
+                Game1.playSound("smallSelect");
+                Helper.Input.Suppress(e.Button);
+                return;
+            }
+        }
+
         if (string.Equals(e.Button.ToString(), Config.Ui.ToggleOverlayButton, StringComparison.OrdinalIgnoreCase))
         {
             overlay.Visible = !overlay.Visible;

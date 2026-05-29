@@ -22,14 +22,38 @@ internal sealed class TodoOverlay
     private static readonly Color BodyText = new(86, 53, 27);
     private static readonly Color ButtonFill = new(126, 70, 24, 235);
     private static readonly Color ButtonText = new(255, 236, 177);
+    private static readonly Color IconLetter = new(34, 100, 42);
+    private static readonly Color IconBadgeFill = new(60, 158, 55, 245);
 
+    private TodoOverlayBounds iconBounds = new(0, 0, 0, 0);
     private IReadOnlyList<TodoReorderControl> reorderControls = Array.Empty<TodoReorderControl>();
+    private bool visible = true;
 
-    public bool Visible { get; set; } = true;
+    public bool Visible
+    {
+        get => visible;
+        set
+        {
+            visible = value;
+            if (!visible)
+                Expanded = false;
+        }
+    }
+
+    public bool Expanded { get; private set; }
+
+    public bool TryTogglePopupClick(int x, int y)
+    {
+        if (!Visible || !TodoOverlayLayout.TryResolveIconClick(iconBounds, x, y))
+            return false;
+
+        Expanded = !Expanded;
+        return true;
+    }
 
     public bool TryResolveReorderClick(int x, int y, out TodoReorderMove move)
     {
-        if (Visible)
+        if (Visible && Expanded)
             return TodoOverlayLayout.TryResolveReorderClick(reorderControls, x, y, out move);
 
         move = new TodoReorderMove(0, 0);
@@ -43,6 +67,7 @@ internal sealed class TodoOverlay
         if (!Visible || !Context.IsWorldReady)
             return;
 
+        iconBounds = TodoOverlayLayout.CreateIcon(Game1.uiViewport.Width, Game1.uiViewport.Height);
         var stateName = syncedState?.Name ?? localState.Name;
         var status = syncedState?.Status ?? localState.Status;
         var lineHeight = Game1.smallFont.LineSpacing + 4;
@@ -52,7 +77,12 @@ internal sealed class TodoOverlay
             .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
             .Take(maxTodoRows)
             .ToArray();
-        var panel = TodoOverlayLayout.Create(visibleItems.Length, lineHeight, Game1.uiViewport.Width, Game1.uiViewport.Height);
+        DrawIcon(spriteBatch, iconBounds, visibleItems.Length, Expanded);
+
+        if (!Expanded)
+            return;
+
+        var panel = TodoOverlayLayout.CreatePopup(visibleItems.Length, lineHeight, Game1.uiViewport.Width, Game1.uiViewport.Height, iconBounds);
         var position = new Vector2(panel.TextX, panel.TextY);
         var canReorder = Context.IsMainPlayer && visibleItems.Length > 1;
         if (canReorder)
@@ -77,6 +107,37 @@ internal sealed class TodoOverlay
             DrawReorderControls(spriteBatch, reorderControls.Where(control => control.FromPosition == i + 1));
             position.Y += lineHeight;
         }
+    }
+
+    private static void DrawIcon(SpriteBatch spriteBatch, TodoOverlayBounds icon, int activeTodoCount, bool expanded)
+    {
+        var bounds = new Rectangle(icon.X, icon.Y, icon.Width, icon.Height);
+        DrawRectangle(spriteBatch, new Rectangle(bounds.X + 3, bounds.Y + 4, bounds.Width, bounds.Height), BoardShadow);
+        DrawRectangle(spriteBatch, bounds, BoardEdge);
+        DrawRectangle(spriteBatch, new Rectangle(bounds.X + 4, bounds.Y + 4, bounds.Width - 8, bounds.Height - 8), BoardWood);
+        DrawRectangle(spriteBatch, new Rectangle(bounds.X + 9, bounds.Y + 9, bounds.Width - 18, bounds.Height - 18), BoardParchment);
+        DrawRectangle(spriteBatch, new Rectangle(bounds.X + 9, bounds.Y + 9, bounds.Width - 18, 3), Color.White * 0.25f);
+
+        var label = expanded ? "X" : "P";
+        var size = Game1.dialogueFont.MeasureString(label);
+        var position = new Vector2(
+            bounds.X + (bounds.Width - size.X) / 2f,
+            bounds.Y + (bounds.Height - size.Y) / 2f - 6f);
+        spriteBatch.DrawString(Game1.dialogueFont, label, position + new Vector2(2, 2), Color.White * 0.5f);
+        spriteBatch.DrawString(Game1.dialogueFont, label, position, IconLetter);
+
+        if (activeTodoCount <= 0)
+            return;
+
+        var count = activeTodoCount > 9 ? "9+" : activeTodoCount.ToString();
+        var badge = new Rectangle(bounds.Right - 22, bounds.Y + 5, 18, 18);
+        DrawRectangle(spriteBatch, badge, BoardEdge);
+        DrawRectangle(spriteBatch, new Rectangle(badge.X + 2, badge.Y + 2, badge.Width - 4, badge.Height - 4), IconBadgeFill);
+        var countSize = Game1.tinyFont.MeasureString(count);
+        var countPosition = new Vector2(
+            badge.X + (badge.Width - countSize.X) / 2f,
+            badge.Y + (badge.Height - countSize.Y) / 2f);
+        spriteBatch.DrawString(Game1.tinyFont, count, countPosition, Color.White);
     }
 
     private static void DrawBoard(SpriteBatch spriteBatch, TodoOverlayPanel panel)

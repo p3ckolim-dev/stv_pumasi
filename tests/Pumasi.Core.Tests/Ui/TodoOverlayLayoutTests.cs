@@ -6,6 +6,37 @@ namespace Pumasi.Core.Tests.Ui;
 public sealed class TodoOverlayLayoutTests
 {
     [Fact]
+    public void CreateIcon_PlacesCompactButtonAwayFromTopHud()
+    {
+        var icon = TodoOverlayLayout.CreateIcon(viewportWidth: 800, viewportHeight: 600);
+
+        Assert.Equal(24, icon.X);
+        Assert.Equal(320, icon.Y);
+        Assert.Equal(64, icon.Width);
+        Assert.Equal(64, icon.Height);
+    }
+
+    [Fact]
+    public void TryResolveIconClick_ReturnsTrueOnlyInsideIcon()
+    {
+        var icon = TodoOverlayLayout.CreateIcon(viewportWidth: 800, viewportHeight: 600);
+
+        Assert.True(TodoOverlayLayout.TryResolveIconClick(icon, icon.X + 1, icon.Y + 1));
+        Assert.False(TodoOverlayLayout.TryResolveIconClick(icon, icon.X - 1, icon.Y + 1));
+    }
+
+    [Fact]
+    public void CreatePopup_PlacesPanelBesideIconWhenThereIsRoom()
+    {
+        var icon = TodoOverlayLayout.CreateIcon(viewportWidth: 800, viewportHeight: 600);
+        var panel = TodoOverlayLayout.CreatePopup(activeTodoCount: 2, lineHeight: 40, viewportWidth: 800, viewportHeight: 600, icon);
+
+        Assert.True(panel.X >= icon.X + icon.Width);
+        Assert.Equal(icon.Y, panel.Y);
+        Assert.True(panel.X + panel.Width <= 800 - 24);
+    }
+
+    [Fact]
     public void Create_StartsBelowTopHudForIdlePanel()
     {
         var panel = TodoOverlayLayout.Create(activeTodoCount: 0, lineHeight: 40, viewportWidth: 800, viewportHeight: 600);

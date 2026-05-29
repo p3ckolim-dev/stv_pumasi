@@ -23,7 +23,7 @@ public static class PumasiSettingsCatalog
     {
         return new[]
         {
-            new PumasiSettingsRow(PumasiSettingsKey.ShowTodoOverlay, "Show todo board", "투두 보드 표시"),
+            new PumasiSettingsRow(PumasiSettingsKey.ShowTodoOverlay, "Show todo HUD icon", "투두 HUD 아이콘 표시"),
             new PumasiSettingsRow(PumasiSettingsKey.ShowHelperStatusNotifications, "Show helper notifications", "도우미 알림 표시"),
             new PumasiSettingsRow(PumasiSettingsKey.WorkCrops, "Crop work", "작물 작업"),
             new PumasiSettingsRow(PumasiSettingsKey.WorkMachines, "Machine work", "기계 작업"),

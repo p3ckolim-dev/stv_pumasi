@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.11`
+Current mod version: `0.1.12`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.11` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.12` among loaded mods.
 
 ## Gemini API Key
 
@@ -110,7 +110,7 @@ Open the ESC/game menu and select the `P` Pumasi tab added to the right side of 
 
 The current Pumasi tab can toggle:
 
-- Todo board visibility.
+- Todo HUD icon visibility.
 - Helper notification visibility.
 - Crop, machine, animal, chest, and planting work categories.
 - Korean Wiki answer support.
@@ -215,7 +215,9 @@ Todo order commands are host-only:
 /pms todo bottom 1
 ```
 
-The host can also click the `^` / `v` buttons on the right side of each todo board row to move that todo up or down. Guests can view the board, but cannot reorder it.
+The HUD shows only a small `P` icon by default. Click it to open the todo board popup, and click it again to close the board. If active todos exist, the icon shows a small count badge.
+
+The host can also click the `^` / `v` buttons on the right side of each open todo board row to move that todo up or down. Guests can view the board, but cannot reorder it.
 
 The host can toggle work categories from chat or the SMAPI console:
 

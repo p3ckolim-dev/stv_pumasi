@@ -38,9 +38,26 @@ public static class TodoOverlayLayout
     private const int PanelWidth = 520;
     private const int MinPanelWidth = 240;
     private const int Padding = 18;
+    private const int IconSize = 64;
+    private const int PopupGap = 12;
     private const int MaxTodoRows = 8;
     private const int ReorderButtonSize = 22;
     private const int ReorderButtonGap = 4;
+
+    public static TodoOverlayBounds CreateIcon(int viewportWidth, int viewportHeight)
+    {
+        var maxX = Math.Max(Margin, viewportWidth - IconSize - Margin);
+        var maxY = Math.Max(Margin, viewportHeight - IconSize - Margin);
+        var x = Math.Clamp(DefaultX, Margin, maxX);
+        var y = Math.Clamp(DefaultY, Margin, maxY);
+
+        return new TodoOverlayBounds(x, y, IconSize, IconSize);
+    }
+
+    public static bool TryResolveIconClick(TodoOverlayBounds icon, int x, int y)
+    {
+        return icon.Contains(x, y);
+    }
 
     public static TodoOverlayPanel Create(int activeTodoCount, int lineHeight, int viewportWidth, int viewportHeight)
     {
@@ -58,6 +75,22 @@ public static class TodoOverlayLayout
         var y = Math.Clamp(DefaultY, Margin, maxY);
 
         return new TodoOverlayPanel(x, y, width, height, Padding, lineCount);
+    }
+
+    public static TodoOverlayPanel CreatePopup(
+        int activeTodoCount,
+        int lineHeight,
+        int viewportWidth,
+        int viewportHeight,
+        TodoOverlayBounds icon)
+    {
+        var panel = Create(activeTodoCount, lineHeight, viewportWidth, viewportHeight);
+        var preferredX = icon.X + icon.Width + PopupGap;
+        var maxX = Math.Max(Margin, viewportWidth - panel.Width - Margin);
+        var x = Math.Clamp(preferredX, Margin, maxX);
+        var y = Math.Clamp(icon.Y, Margin, Math.Max(Margin, viewportHeight - panel.Height - Margin));
+
+        return panel with { X = x, Y = y };
     }
 
     public static int GetVisibleTodoCapacity(int lineHeight, int viewportHeight)

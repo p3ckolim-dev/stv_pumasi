@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.11`
+Current mod version: `0.1.12`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.11.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.12.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -114,7 +114,7 @@ Chat commands:
 
 Command parsing is centralized in `Pumasi.Core.Commands.PumasiCommandParser`. Chat key input is rejected by design, so secrets are not accepted through in-game chat.
 
-Todo board `^` / `v` button clicks are handled through the SMAPI input event and call the existing `TaskManager.MoveActiveTask` path. This is host-only and shares the same validation rules as command-based reorder operations.
+The todo HUD renders only a small `P` icon by default, then expands the todo board popup when that icon is clicked. Open todo board `^` / `v` button clicks are handled through the SMAPI input event and call the existing `TaskManager.MoveActiveTask` path. This is host-only and shares the same validation rules as command-based reorder operations.
 
 Todo execution is top-to-bottom by visible queue order. Morning farm scans enqueue up to `Assistant.MorningTodoLimit` safe tasks by default, and user/AI-planned tasks append to the bottom unless the host reorders them.
 
