@@ -48,6 +48,27 @@ public sealed class KnowledgeIntentClassifier
         "누구"
     };
 
+    private static readonly string[] ContextReferenceKeywords =
+    {
+        "그거",
+        "그건",
+        "그것",
+        "그게",
+        "그걸",
+        "그걸로",
+        "그 사람",
+        "그 작물",
+        "그 씨앗",
+        "저거",
+        "저건",
+        "저것",
+        "이거",
+        "이건",
+        "이것",
+        "방금",
+        "아까"
+    };
+
     public KnowledgeIntent Classify(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -60,6 +81,10 @@ public sealed class KnowledgeIntentClassifier
         var hasTaskSignal = TaskKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         var hasWikiSignal = WikiKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         var hasAssistantConversationSignal = AssistantConversationKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        var hasContextReferenceSignal = ContextReferenceKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+
+        if (hasContextReferenceSignal)
+            return KnowledgeIntent.Ambiguous;
 
         if (hasAssistantConversationSignal && !hasTaskSignal)
             return KnowledgeIntent.Ambiguous;

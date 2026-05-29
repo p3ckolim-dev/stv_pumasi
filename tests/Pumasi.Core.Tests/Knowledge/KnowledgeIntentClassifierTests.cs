@@ -34,6 +34,9 @@ public sealed class KnowledgeIntentClassifierTests
     [Theory]
     [InlineData("")]
     [InlineData("온실 어떻게 할까?")]
+    [InlineData("그거 가격은?")]
+    [InlineData("그건 어디서 사?")]
+    [InlineData("방금 말한 걸로 해줘")]
     [InlineData("너는 뭘 할 수 있어?")]
     [InlineData("품앗이 뭐야?")]
     public void Classify_ReturnsAmbiguousWhenIntentIsNotSafeToExecute(string input)

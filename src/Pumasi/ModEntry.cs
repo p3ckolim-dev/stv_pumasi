@@ -29,6 +29,7 @@ internal enum CommandSurface
 public sealed class ModEntry : Mod
 {
     private const string ChatCommandName = "p3ckolim.pms_pms";
+    private const string ConversationMemoryDataKey = "conversation-memory";
     private const int ConversationHistoryLimit = 12;
     private const string PumasiSettingsTabLabel = "Pumasi";
     private const int PumasiSettingsTabSize = 64;
@@ -41,13 +42,14 @@ public sealed class ModEntry : Mod
     private MultiplayerSyncService multiplayer = null!;
     private TodoOverlay overlay = null!;
     private WikiMemoryCache wikiCache = null!;
-    private readonly List<ConversationTurn> conversationHistory = new();
+    private readonly ConversationMemory conversationMemory = new(ConversationHistoryLimit);
     private GameMenu? pumasiSettingsGameMenu;
     private int pumasiSettingsTabIndex = -1;
     private Rectangle pumasiSettingsTabBounds = Rectangle.Empty;
     private int executionCooldownTicks;
     private DateTimeOffset lastWikiQuestionAt = DateTimeOffset.MinValue;
     private bool chatCommandsRegistered;
+    private bool conversationMemoryDirty;
 
     public override void Entry(IModHelper helper)
     {
@@ -64,6 +66,8 @@ public sealed class ModEntry : Mod
         helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         helper.Events.GameLoop.DayStarted += OnDayStarted;
         helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        helper.Events.GameLoop.Saving += OnSaving;
+        helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
         helper.Events.Display.MenuChanged += OnMenuChanged;
         helper.Events.Display.RenderedHud += OnRenderedHud;
         helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
@@ -125,9 +129,21 @@ public sealed class ModEntry : Mod
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
+        LoadConversationMemory();
         helperState.Name = Config.Assistant.Name;
         helperState.Status = Context.IsMainPlayer ? "Host idle" : "Guest view";
         BroadcastState();
+    }
+
+    private void OnSaving(object? sender, SavingEventArgs e)
+    {
+        SaveConversationMemoryIfNeeded(force: true);
+    }
+
+    private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
+    {
+        conversationMemory.Clear();
+        conversationMemoryDirty = false;
     }
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
@@ -138,7 +154,12 @@ public sealed class ModEntry : Mod
 
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
     {
-        if (!Context.IsWorldReady || !Context.IsMainPlayer)
+        if (!Context.IsWorldReady)
+            return;
+
+        SaveConversationMemoryIfNeeded(force: false);
+
+        if (!Context.IsMainPlayer)
             return;
 
         if (executionCooldownTicks > 0)
@@ -590,7 +611,7 @@ public sealed class ModEntry : Mod
 
     private string BuildStatusMessage()
     {
-        return $"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}";
+        return $"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}, contextTurns={conversationMemory.Turns.Count}";
     }
 
     private string BuildWorkCategoryStatus()
@@ -832,7 +853,7 @@ public sealed class ModEntry : Mod
                 .Select((item, index) => $"#{index + 1} {item.Key} [{item.Status}] {item.Reason}")
                 .ToArray();
 
-            var prompt = ContextualIntentRouter.BuildPrompt(instruction, conversationHistory, currentTodos);
+            var prompt = ContextualIntentRouter.BuildPrompt(instruction, conversationMemory.Turns, currentTodos);
             var modelText = await client.GenerateTextAsync(prompt).ConfigureAwait(false);
             var routed = ContextualIntentRouter.ParseResponse(modelText);
             if (!routed.Success)
@@ -984,9 +1005,47 @@ public sealed class ModEntry : Mod
         if (string.IsNullOrWhiteSpace(text))
             return;
 
-        conversationHistory.Add(new ConversationTurn(role, text.Trim()));
-        while (conversationHistory.Count > ConversationHistoryLimit)
-            conversationHistory.RemoveAt(0);
+        conversationMemory.Remember(role, text);
+        conversationMemoryDirty = true;
+    }
+
+    private void LoadConversationMemory()
+    {
+        conversationMemory.Clear();
+        conversationMemoryDirty = false;
+
+        if (!Context.IsMainPlayer)
+            return;
+
+        try
+        {
+            var data = Helper.Data.ReadSaveData<ConversationMemorySaveData>(ConversationMemoryDataKey);
+            conversationMemory.Restore(data);
+            Monitor.Log($"Loaded {conversationMemory.Turns.Count} pumasi conversation turn(s) for this save.", LogLevel.Trace);
+        }
+        catch (Exception ex)
+        {
+            Monitor.Log($"Could not load pumasi conversation memory: {ex.Message}", LogLevel.Warn);
+        }
+    }
+
+    private void SaveConversationMemoryIfNeeded(bool force)
+    {
+        if (!Context.IsWorldReady || !Context.IsMainPlayer)
+            return;
+
+        if (!force && !conversationMemoryDirty)
+            return;
+
+        try
+        {
+            Helper.Data.WriteSaveData(ConversationMemoryDataKey, conversationMemory.ToSaveData());
+            conversationMemoryDirty = false;
+        }
+        catch (Exception ex)
+        {
+            Monitor.Log($"Could not save pumasi conversation memory: {ex.Message}", LogLevel.Warn);
+        }
     }
 
     private void PostHelperAnswerToChat(string answer, IReadOnlyList<string> sources)
