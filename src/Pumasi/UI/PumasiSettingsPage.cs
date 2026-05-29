@@ -9,12 +9,6 @@ namespace Pumasi.UI;
 
 internal sealed class PumasiSettingsPage : IClickableMenu
 {
-    private const int ContentInset = 88;
-    private const int RowHeight = 56;
-    private const int CheckboxSize = 32;
-    private const int CheckboxTextGap = 20;
-    private const int FooterHeight = 44;
-
     private static readonly Color TextColor = new(86, 22, 12);
     private static readonly Color MutedTextColor = new(126, 81, 47);
     private static readonly Color CheckboxBorder = new(92, 47, 19);
@@ -71,38 +65,34 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     public override void draw(SpriteBatch b)
     {
         rowHitAreas.Clear();
-        DrawTitle(b);
+        var layout = PumasiSettingsPageLayoutFactory.Create(xPositionOnScreen, yPositionOnScreen, width, height, rows.Count);
+        DrawTitle(b, layout);
 
-        var contentX = xPositionOnScreen + ContentInset;
-        var contentY = yPositionOnScreen + ContentInset + 34;
-        var contentWidth = width - ContentInset * 2;
-        var visibleRows = Math.Max(1, (height - ContentInset * 2 - FooterHeight) / RowHeight);
-
-        for (var i = 0; i < rows.Count && i < visibleRows; i++)
+        for (var i = 0; i < rows.Count && i < layout.VisibleRows; i++)
         {
             var row = rows[i];
-            var rowY = contentY + i * RowHeight;
-            var checkboxBounds = new Rectangle(contentX, rowY + 10, CheckboxSize, CheckboxSize);
-            var rowBounds = new Rectangle(contentX, rowY, contentWidth, RowHeight);
+            var rowY = layout.FirstRowY + i * layout.RowHeight;
+            var checkboxBounds = new Rectangle(layout.CheckboxX, rowY + 10, layout.CheckboxSize, layout.CheckboxSize);
+            var rowBounds = new Rectangle(layout.ContentX, rowY, layout.ContentRight - layout.ContentX, layout.RowHeight);
             var enabled = GetValue(row.Key);
             var editable = CanEdit(row.Key);
 
             DrawCheckbox(b, checkboxBounds, enabled, editable);
-            DrawRowLabel(b, row, new Vector2(contentX + CheckboxSize + CheckboxTextGap, rowY + 5), editable);
+            DrawRowLabel(b, row, new Vector2(layout.RowLabelX, rowY + 6), layout.RowLabelMaxWidth, editable);
             rowHitAreas.Add(new RowHitArea(row, rowBounds));
         }
 
-        DrawFooter(b);
+        DrawFooter(b, layout);
     }
 
-    private void DrawTitle(SpriteBatch b)
+    private void DrawTitle(SpriteBatch b, PumasiSettingsPageLayout layout)
     {
         var title = "Pumasi Settings";
         var subtitle = canEditHostSettings()
             ? "품앗이 빠른 설정"
             : "게스트는 로컬 UI 설정만 변경할 수 있어요";
-        var titlePosition = new Vector2(xPositionOnScreen + ContentInset, yPositionOnScreen + 62);
-        var subtitlePosition = new Vector2(titlePosition.X, titlePosition.Y + Game1.dialogueFont.LineSpacing - 2);
+        var titlePosition = new Vector2(layout.ContentX, layout.TitleY);
+        var subtitlePosition = new Vector2(layout.ContentX, layout.SubtitleY);
 
         b.DrawString(Game1.dialogueFont, title, titlePosition + new Vector2(2, 2), Color.White * 0.55f);
         b.DrawString(Game1.dialogueFont, title, titlePosition, TextColor);
@@ -110,12 +100,13 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         b.DrawString(Game1.smallFont, subtitle, subtitlePosition, MutedTextColor);
     }
 
-    private void DrawFooter(SpriteBatch b)
+    private void DrawFooter(SpriteBatch b, PumasiSettingsPageLayout layout)
     {
-        var text = "Text settings and Gemini API key: use Generic Mod Config Menu or SMAPI console pms_key.";
-        var position = new Vector2(xPositionOnScreen + ContentInset, yPositionOnScreen + height - ContentInset + 22);
-        b.DrawString(Game1.smallFont, TrimToWidth(text, width - ContentInset * 2), position + new Vector2(1, 1), Color.White * 0.45f);
-        b.DrawString(Game1.smallFont, TrimToWidth(text, width - ContentInset * 2), position, MutedTextColor);
+        var text = "이름/규칙/API 키: GMCM 또는 SMAPI 콘솔 pms_key";
+        var position = new Vector2(layout.ContentX, layout.FooterY);
+        var clipped = TrimToWidth(text, layout.FooterMaxWidth);
+        b.DrawString(Game1.smallFont, clipped, position + new Vector2(1, 1), Color.White * 0.45f);
+        b.DrawString(Game1.smallFont, clipped, position, MutedTextColor);
     }
 
     private static void DrawCheckbox(SpriteBatch b, Rectangle bounds, bool enabled, bool editable)
@@ -139,10 +130,10 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         b.DrawString(Game1.smallFont, mark, markPosition, Color.White);
     }
 
-    private static void DrawRowLabel(SpriteBatch b, PumasiSettingsRow row, Vector2 position, bool editable)
+    private static void DrawRowLabel(SpriteBatch b, PumasiSettingsRow row, Vector2 position, int maxWidth, bool editable)
     {
         var color = editable ? TextColor : MutedTextColor;
-        var label = $"{row.KoreanLabel}  /  {row.EnglishLabel}";
+        var label = TrimToWidth(row.KoreanLabel, maxWidth);
         b.DrawString(Game1.smallFont, label, position + new Vector2(1, 1), Color.White * 0.4f);
         b.DrawString(Game1.smallFont, label, position, color);
     }

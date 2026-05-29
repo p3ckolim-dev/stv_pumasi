@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.13`
+Current mod version: `0.1.14`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.13.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.14.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -223,5 +223,6 @@ When changing public behavior:
 - Update user and developer docs in both English and Korean if the behavior is user-visible.
 - Rebuild the SMAPI zip.
 - Confirm SMAPI loads the expected version.
+- `UpdateKeys` are for SMAPI update notifications, not automatic installation. Upload the release zip to GitHub Releases so users can replace the mod manually.
 
 SMAPI analyzer warnings about compiler/analyzer version mismatch may appear depending on the local SDK. Treat build errors as blockers; track analyzer warnings separately unless they indicate a real mod issue.

@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.13`
+현재 모드 버전: `0.1.14`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.13.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.14.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -223,5 +223,6 @@ git diff --check
 - 사용자에게 보이는 변경이면 영어/한국어 사용자 문서와 개발자 문서를 함께 갱신합니다.
 - SMAPI zip을 다시 빌드합니다.
 - SMAPI가 기대한 버전을 로드하는지 확인합니다.
+- `UpdateKeys`는 자동 설치가 아니라 SMAPI 업데이트 알림용입니다. 릴리스 zip은 GitHub Releases에 올려야 사용자가 수동으로 교체할 수 있습니다.
 
 로컬 SDK에 따라 SMAPI analyzer의 컴파일러/분석기 버전 경고가 나타날 수 있습니다. 빌드 오류는 차단 사항으로 보고, analyzer 경고는 실제 모드 문제를 나타내는지 별도로 판단하세요.

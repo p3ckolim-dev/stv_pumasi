@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.13`
+Current mod version: `0.1.14`
 
 ## Who This Page Is For
 
@@ -42,7 +42,13 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.13` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.14` among loaded mods.
+
+## Updating
+
+SMAPI `UpdateKeys` are update notifications, not automatic installation. If the SMAPI console says `You can update 1 mod`, SMAPI has detected a newer version but has not replaced the mod files.
+
+To update, download the latest `Pumasi.x.x.x.zip` from GitHub Releases, then overwrite the existing `Mods/Pumasi` folder or delete that folder and extract the new zip again. In multiplayer, host and guests should install the same version.
 
 ## Gemini API Key
 
