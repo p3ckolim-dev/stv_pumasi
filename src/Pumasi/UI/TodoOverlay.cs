@@ -71,7 +71,6 @@ internal sealed class TodoOverlay
 
         iconBounds = TodoOverlayLayout.CreateIcon(Game1.uiViewport.Width, Game1.uiViewport.Height);
         var stateName = syncedState?.Name ?? localState.Name;
-        var status = syncedState?.Status ?? localState.Status;
         var lineHeight = Game1.smallFont.LineSpacing + 4;
         var maxTodoRows = TodoOverlayLayout.GetVisibleTodoCapacity(lineHeight, Game1.uiViewport.Height);
 
@@ -92,7 +91,7 @@ internal sealed class TodoOverlay
         var textWidth = GetTodoTextWidth(panel, reorderControls);
 
         DrawBoard(spriteBatch, panel);
-        DrawShadowedText(spriteBatch, $"{stateName}: {status}", position, TitleText);
+        DrawShadowedText(spriteBatch, TodoOverlayText.FormatTitle(stateName), position, TitleText);
         position.Y += lineHeight;
 
         if (visibleItems.Length == 0)

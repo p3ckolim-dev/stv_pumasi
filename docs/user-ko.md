@@ -4,7 +4,7 @@
 
 `pumasi` (`pms`, 한글 이름: `품앗이`)는 Stardew Valley용 SMAPI 모드 프로토타입입니다. 질문에 답하고, 투두 목록을 관리하고, 제한된 범위의 안전한 반복 농장 작업을 수행하는 도우미를 제공합니다.
 
-현재 모드 버전: `0.1.18`
+현재 모드 버전: `0.1.19`
 
 ## 이 문서의 대상
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI는 시작할 때 정확한 `Mods go here:` 경로를 출력합니다. 위 예시와 다르면 SMAPI가 출력한 경로를 기준으로 설치하세요.
 
-설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.18`가 보이면 정상입니다.
+설치 후 SMAPI로 게임을 실행했을 때 로드된 모드 목록에 `pumasi 0.1.19`가 보이면 정상입니다.
 
 ## 업데이트
 
