@@ -315,21 +315,32 @@ public sealed class ModEntry : Mod
 
     private static Rectangle CreatePumasiSettingsTabBounds(GameMenu gameMenu)
     {
-        var exitTab = gameMenu.tabs.FirstOrDefault(tab => tab.name == "exit");
-        if (exitTab is not null)
-            return new Rectangle(exitTab.bounds.Right, exitTab.bounds.Y, exitTab.bounds.Width, exitTab.bounds.Height);
+        var anchorTab = gameMenu.tabs
+            .Where(tab => tab.bounds.Width > 0 && tab.bounds.Height > 0)
+            .OrderByDescending(tab => tab.bounds.Right)
+            .FirstOrDefault();
+
+        var fallbackAnchorY = gameMenu.yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY;
+        var bounds = PumasiSettingsTabLayoutFactory.Create(
+            gameMenu.xPositionOnScreen,
+            gameMenu.yPositionOnScreen,
+            gameMenu.width,
+            Game1.uiViewport.Width,
+            anchorTab?.bounds.Right ?? gameMenu.xPositionOnScreen + 704,
+            anchorTab?.bounds.Y ?? fallbackAnchorY,
+            anchorTab?.bounds.Width ?? PumasiSettingsTabSize,
+            anchorTab?.bounds.Height ?? PumasiSettingsTabSize);
 
         return new Rectangle(
-            gameMenu.xPositionOnScreen + 704,
-            gameMenu.yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + PumasiSettingsTabSize,
-            PumasiSettingsTabSize,
-            PumasiSettingsTabSize);
+            bounds.X,
+            bounds.Y,
+            bounds.Width,
+            bounds.Height);
     }
 
     private void DrawPumasiSettingsTab(SpriteBatch spriteBatch, GameMenu gameMenu)
     {
-        var yOffset = gameMenu.currentTab == pumasiSettingsTabIndex ? 8 : 0;
-        var position = new Vector2(pumasiSettingsTabBounds.X, pumasiSettingsTabBounds.Y + yOffset);
+        var position = new Vector2(pumasiSettingsTabBounds.X, pumasiSettingsTabBounds.Y);
         spriteBatch.Draw(
             Game1.mouseCursors,
             position,
@@ -345,7 +356,7 @@ public sealed class ModEntry : Mod
         var labelSize = Game1.smallFont.MeasureString(label);
         var labelPosition = new Vector2(
             pumasiSettingsTabBounds.X + (pumasiSettingsTabBounds.Width - labelSize.X) / 2f,
-            pumasiSettingsTabBounds.Y + yOffset + 17);
+            pumasiSettingsTabBounds.Y + 17);
         spriteBatch.DrawString(Game1.smallFont, label, labelPosition + new Vector2(1, 1), Color.White * 0.55f);
         spriteBatch.DrawString(Game1.smallFont, label, labelPosition, Color.DarkGreen);
 

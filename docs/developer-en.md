@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.16`
+Current mod version: `0.1.17`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.16.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.17.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -125,6 +125,8 @@ Todo execution is top-to-bottom by visible queue order. Morning farm scans enque
 The setting order is owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `PumasiSettingsCatalogTests` verifies the row order and labels.
 
 The language setting is stored in `UiConfig.Language`. Pumasi-owned UI text is selected through `Pumasi.Core.Ui.PumasiText`, and settings row labels are formatted by `PumasiSettingsCatalog` using the same language setting.
+
+Settings page scrolling and scrollbar calculations live in `PumasiSettingsScroll`, and custom `P` tab placement is calculated by `PumasiSettingsTabLayoutFactory` based on available room in the top tab row.
 
 ## AI And Wiki Flow
 

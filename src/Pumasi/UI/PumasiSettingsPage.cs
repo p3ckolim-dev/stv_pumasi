@@ -16,6 +16,8 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     private static readonly Color CheckboxEnabledFill = new(76, 181, 63);
     private static readonly Color CheckboxDisabledFill = new(132, 105, 75);
     private static readonly Color LanguageChipFill = new(63, 142, 184);
+    private static readonly Color ScrollbarTrack = new(122, 72, 29);
+    private static readonly Color ScrollbarThumb = new(210, 140, 54);
 
     private readonly ModConfig config;
     private readonly Func<bool> canEditHostSettings;
@@ -23,6 +25,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     private readonly Action changed;
     private readonly IReadOnlyList<PumasiSettingsRow> rows;
     private readonly List<RowHitArea> rowHitAreas = new();
+    private int scrollIndex;
 
     public PumasiSettingsPage(
         int x,
@@ -44,6 +47,13 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
     {
+        var layout = PumasiSettingsPageLayoutFactory.Create(xPositionOnScreen, yPositionOnScreen, width, height, rows.Count);
+        if (TryHandleScrollbarClick(x, y, layout))
+        {
+            Game1.playSound("shiny4");
+            return;
+        }
+
         foreach (var hitArea in rowHitAreas)
         {
             if (!hitArea.Bounds.Contains(x, y))
@@ -67,11 +77,12 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     {
         rowHitAreas.Clear();
         var layout = PumasiSettingsPageLayoutFactory.Create(xPositionOnScreen, yPositionOnScreen, width, height, rows.Count);
+        scrollIndex = PumasiSettingsScroll.ClampScrollIndex(scrollIndex, rows.Count, layout.VisibleRows);
         DrawTitle(b, layout);
 
-        for (var i = 0; i < rows.Count && i < layout.VisibleRows; i++)
+        for (var i = 0; i < layout.VisibleRows && scrollIndex + i < rows.Count; i++)
         {
-            var row = rows[i];
+            var row = rows[scrollIndex + i];
             var rowY = layout.FirstRowY + i * layout.RowHeight;
             var checkboxBounds = new Rectangle(layout.CheckboxX, rowY + 10, layout.CheckboxSize, layout.CheckboxSize);
             var rowBounds = new Rectangle(layout.ContentX, rowY, layout.ContentRight - layout.ContentX, layout.RowHeight);
@@ -87,7 +98,23 @@ internal sealed class PumasiSettingsPage : IClickableMenu
             rowHitAreas.Add(new RowHitArea(row, rowBounds));
         }
 
+        DrawScrollbar(b, layout);
         DrawFooter(b, layout);
+    }
+
+    public override void receiveScrollWheelAction(int direction)
+    {
+        var layout = PumasiSettingsPageLayoutFactory.Create(xPositionOnScreen, yPositionOnScreen, width, height, rows.Count);
+        if (!layout.HasScrollbar)
+            return;
+
+        var delta = direction < 0 ? 1 : -1;
+        var next = PumasiSettingsScroll.ClampScrollIndex(scrollIndex + delta, rows.Count, layout.VisibleRows);
+        if (next == scrollIndex)
+            return;
+
+        scrollIndex = next;
+        Game1.playSound("shiny4");
     }
 
     private void DrawTitle(SpriteBatch b, PumasiSettingsPageLayout layout)
@@ -140,13 +167,39 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         DrawRectangle(b, bounds, CheckboxBorder);
         DrawRectangle(b, new Rectangle(bounds.X + 4, bounds.Y + 4, bounds.Width - 8, bounds.Height - 8), LanguageChipFill);
 
-        var mark = language == UiLanguage.English ? "EN" : "KO";
+        var mark = language == UiLanguage.English ? "E" : "K";
         var markSize = Game1.tinyFont.MeasureString(mark);
         var markPosition = new Vector2(
             bounds.X + (bounds.Width - markSize.X) / 2f,
             bounds.Y + (bounds.Height - markSize.Y) / 2f);
         b.DrawString(Game1.tinyFont, mark, markPosition + new Vector2(1, 1), Color.Black * 0.35f);
         b.DrawString(Game1.tinyFont, mark, markPosition, Color.White);
+    }
+
+    private void DrawScrollbar(SpriteBatch b, PumasiSettingsPageLayout layout)
+    {
+        if (!layout.HasScrollbar)
+            return;
+
+        var track = new Rectangle(layout.ScrollbarX, layout.ScrollbarTrackY, layout.ScrollbarWidth, layout.ScrollbarTrackHeight);
+        var thumb = PumasiSettingsScroll.CreateThumb(layout, rows.Count, scrollIndex);
+        DrawRectangle(b, track, CheckboxBorder);
+        DrawRectangle(b, new Rectangle(track.X + 3, track.Y + 3, track.Width - 6, track.Height - 6), ScrollbarTrack);
+        DrawRectangle(b, new Rectangle(thumb.X, thumb.Y, thumb.Width, thumb.Height), CheckboxBorder);
+        DrawRectangle(b, new Rectangle(thumb.X + 3, thumb.Y + 3, thumb.Width - 6, thumb.Height - 6), ScrollbarThumb);
+    }
+
+    private bool TryHandleScrollbarClick(int x, int y, PumasiSettingsPageLayout layout)
+    {
+        if (!layout.HasScrollbar)
+            return false;
+
+        var track = new Rectangle(layout.ScrollbarX, layout.ScrollbarTrackY, layout.ScrollbarWidth, layout.ScrollbarTrackHeight);
+        if (!track.Contains(x, y))
+            return false;
+
+        scrollIndex = PumasiSettingsScroll.IndexFromTrackClick(layout, rows.Count, y);
+        return true;
     }
 
     private static void DrawRowLabel(SpriteBatch b, PumasiSettingsRow row, UiLanguage language, Vector2 position, int maxWidth, bool editable)

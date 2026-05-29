@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.16`
+현재 모드 버전: `0.1.17`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.16.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.17.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -125,6 +125,8 @@ pms_work <category> on|off
 설정 항목 순서는 `Pumasi.Core.Ui.PumasiSettingsCatalog`가 소유하며, `PumasiSettingsCatalogTests`가 항목 순서와 라벨 존재를 검증합니다.
 
 언어 설정은 `UiConfig.Language`에 저장됩니다. Pumasi 자체 UI 문구는 `Pumasi.Core.Ui.PumasiText`를 통해 한국어/영어를 선택하고, 설정 행 라벨은 `PumasiSettingsCatalog`가 같은 언어 설정을 사용해 포매팅합니다.
+
+설정 페이지의 스크롤/스크롤바 계산은 `PumasiSettingsScroll`이 담당하고, 커스텀 `P` 탭 위치는 `PumasiSettingsTabLayoutFactory`가 상단 탭 줄의 남은 공간을 기준으로 계산합니다.
 
 ## AI와 위키 흐름
 

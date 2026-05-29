@@ -21,6 +21,8 @@ public sealed class ContextualIntentRouterTests
         Assert.Contains("온실 수확할까?", prompt);
         Assert.Contains("HarvestCrop:Greenhouse:10,8", prompt);
         Assert.Contains("Do not choose Clarify unless", prompt);
+        Assert.Contains("ChatAnswer only for Stardew Valley", prompt);
+        Assert.Contains("off-topic", prompt);
     }
 
     [Theory]

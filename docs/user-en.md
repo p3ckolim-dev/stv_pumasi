@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.16`
+Current mod version: `0.1.17`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.16` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.17` among loaded mods.
 
 ## Updating
 
@@ -123,6 +123,8 @@ The current Pumasi tab can toggle:
 - Korean Wiki answer support.
 
 The language setting applies to Pumasi-owned UI text such as the settings page, todo board, chat command feedback, HUD notifications, and GMCM setting names. Gemini-generated answers and raw wiki-derived content may still appear in the language produced by the model/wiki.
+
+If there are more settings than fit on screen, use the mouse wheel or the right-side scrollbar to view lower rows. On screens where the top menu tab row has no room, the Pumasi tab drops below the vanilla tabs instead of overlapping them.
 
 Changes are saved immediately to `Mods/Pumasi/config.json`. In multiplayer, guests can change language and local UI settings only. Host-authoritative settings like work categories and wiki answers must be changed by the host to affect execution.
 

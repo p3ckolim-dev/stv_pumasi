@@ -58,8 +58,11 @@ public static class ContextualIntentRouter
             "Choose exactly one intent:\n" +
             "- TaskPlanning: the player wants pumasi to do or plan farm work.\n" +
             "- WikiAnswer: the player asks for Stardew Valley information, advice, prices, locations, schedules, gifts, or recommendations.\n" +
-            "- ChatAnswer: the player is greeting, thanking, reacting, or asking a casual non-world-changing question.\n" +
+            "- ChatAnswer: the player is greeting, thanking, reacting, or asking a casual non-world-changing question inside the Stardew Valley, current farm, todo, or pumasi helper context.\n" +
             "- Clarify: only when the request is truly impossible to infer or would be unsafe to execute.\n" +
+            "ChatAnswer only for Stardew Valley, current farm/todos, multiplayer farm play, and pumasi helper conversation.\n" +
+            "If the player is off-topic, choose ChatAnswer and briefly redirect them back to Stardew Valley or farm help without answering the off-topic content.\n" +
+            "Do not choose WikiAnswer just because the player is chatting about Stardew Valley; choose WikiAnswer only when factual wiki-style lookup would help.\n" +
             "Do not choose Clarify unless context is insufficient after considering pronouns like 'that', 'it', '그거', '저거', '응', and '그래'.\n" +
             "For TaskPlanning or WikiAnswer, rewrite vague input into a clear Korean instruction/question.\n" +
             "For ChatAnswer, provide a short friendly Korean answer.\n" +
