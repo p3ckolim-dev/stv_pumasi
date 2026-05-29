@@ -19,35 +19,49 @@ public sealed class WikiClient
         int limit,
         CancellationToken cancellationToken = default)
     {
-        var requestUri = BuildSearchUri(query, limit);
-        try
+        foreach (var candidate in WikiSearchQueryBuilder.CreateCandidates(query))
         {
-            using var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-                return WikiResult<IReadOnlyList<WikiSearchResult>>.Fail($"wiki-http-{(int)response.StatusCode}", Array.Empty<WikiSearchResult>());
-
-            using var document = JsonDocument.Parse(body);
-            var results = new List<WikiSearchResult>();
-            if (document.RootElement.TryGetProperty("query", out var queryElement)
-                && queryElement.TryGetProperty("search", out var searchElement)
-                && searchElement.ValueKind == JsonValueKind.Array)
+            var requestUri = BuildSearchUri(candidate, limit);
+            try
             {
-                foreach (var item in searchElement.EnumerateArray())
+                using var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                    return WikiResult<IReadOnlyList<WikiSearchResult>>.Fail($"wiki-http-{(int)response.StatusCode}", Array.Empty<WikiSearchResult>());
+
+                using var document = JsonDocument.Parse(body);
+                var results = ParseSearchResults(document);
+                if (results.Count > 0)
+                    return WikiResult<IReadOnlyList<WikiSearchResult>>.Ok(results);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                return WikiResult<IReadOnlyList<WikiSearchResult>>.Fail("wiki-search-failed", Array.Empty<WikiSearchResult>());
+            }
+        }
+
+        return WikiResult<IReadOnlyList<WikiSearchResult>>.Ok(Array.Empty<WikiSearchResult>());
+    }
+
+    private List<WikiSearchResult> ParseSearchResults(JsonDocument document)
+    {
+        var results = new List<WikiSearchResult>();
+        if (document.RootElement.TryGetProperty("query", out var queryElement)
+            && queryElement.TryGetProperty("search", out var searchElement)
+            && searchElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in searchElement.EnumerateArray())
+            {
+                var title = item.TryGetProperty("title", out var titleElement) ? titleElement.GetString() ?? "" : "";
+                var snippet = item.TryGetProperty("snippet", out var snippetElement) ? StripHtml(snippetElement.GetString() ?? "") : "";
+                if (!string.IsNullOrWhiteSpace(title))
                 {
-                    var title = item.TryGetProperty("title", out var titleElement) ? titleElement.GetString() ?? "" : "";
-                    var snippet = item.TryGetProperty("snippet", out var snippetElement) ? StripHtml(snippetElement.GetString() ?? "") : "";
-                    if (!string.IsNullOrWhiteSpace(title))
-                        results.Add(new WikiSearchResult(title, BuildPageUrl(title), snippet));
+                    results.Add(new WikiSearchResult(title, BuildPageUrl(title), snippet));
                 }
             }
+        }
 
-            return WikiResult<IReadOnlyList<WikiSearchResult>>.Ok(results);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            return WikiResult<IReadOnlyList<WikiSearchResult>>.Fail("wiki-search-failed", Array.Empty<WikiSearchResult>());
-        }
+        return results;
     }
 
     public async Task<WikiResult<WikiPageExtract>> GetExtractAsync(
@@ -66,22 +80,19 @@ public sealed class WikiClient
             using var document = JsonDocument.Parse(body);
             if (!document.RootElement.TryGetProperty("query", out var queryElement)
                 || !queryElement.TryGetProperty("pages", out var pagesElement)
-                || pagesElement.ValueKind != JsonValueKind.Object)
+                || pagesElement.ValueKind != JsonValueKind.Array)
             {
                 return WikiResult<WikiPageExtract>.Fail("wiki-extract-missing-pages", fallback);
             }
 
-            foreach (var page in pagesElement.EnumerateObject())
+            foreach (var pageElement in pagesElement.EnumerateArray())
             {
-                var pageElement = page.Value;
                 var pageTitle = pageElement.TryGetProperty("title", out var titleElement)
                     ? titleElement.GetString() ?? title
                     : title;
-                var extract = pageElement.TryGetProperty("extract", out var extractElement)
-                    ? extractElement.GetString() ?? ""
-                    : "";
+                var extract = ExtractRevisionContent(pageElement);
 
-                return WikiResult<WikiPageExtract>.Ok(new WikiPageExtract(pageTitle, BuildPageUrl(pageTitle), extract.Trim()));
+                return WikiResult<WikiPageExtract>.Ok(new WikiPageExtract(pageTitle, BuildPageUrl(pageTitle), CleanWikiText(extract)));
             }
 
             return WikiResult<WikiPageExtract>.Fail("wiki-extract-empty", fallback);
@@ -99,7 +110,7 @@ public sealed class WikiClient
 
     internal string BuildExtractUri(string title)
     {
-        return $"{ApiEndpoint()}?action=query&prop=extracts&explaintext=1&exintro=0&titles={Uri.EscapeDataString(title)}&format=json&utf8=1";
+        return $"{ApiEndpoint()}?action=query&prop=revisions&rvprop=content&rvslots=main&titles={Uri.EscapeDataString(title)}&format=json&formatversion=2&utf8=1";
     }
 
     private string ApiEndpoint() => $"{options.BaseUrl.TrimEnd('/')}/mediawiki/api.php";
@@ -112,5 +123,36 @@ public sealed class WikiClient
     private static string StripHtml(string value)
     {
         return Regex.Replace(value, "<.*?>", "").Trim();
+    }
+
+    private static string ExtractRevisionContent(JsonElement pageElement)
+    {
+        if (!pageElement.TryGetProperty("revisions", out var revisionsElement)
+            || revisionsElement.ValueKind != JsonValueKind.Array)
+        {
+            return "";
+        }
+
+        foreach (var revision in revisionsElement.EnumerateArray())
+        {
+            if (revision.TryGetProperty("slots", out var slotsElement)
+                && slotsElement.TryGetProperty("main", out var mainElement)
+                && mainElement.TryGetProperty("content", out var contentElement))
+            {
+                return contentElement.GetString() ?? "";
+            }
+        }
+
+        return "";
+    }
+
+    private static string CleanWikiText(string value)
+    {
+        var text = Regex.Replace(value, @"\[\[(?:[^|\]]*\|)?([^\]]+)\]\]", "$1");
+        text = Regex.Replace(text, @"'{2,}", "");
+        text = Regex.Replace(text, @"<[^>]+>", " ");
+        text = Regex.Replace(text, @"==+\s*(.*?)\s*==+", "\n$1\n");
+        text = Regex.Replace(text, @"\s+", " ");
+        return text.Trim();
     }
 }

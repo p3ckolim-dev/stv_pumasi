@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.12`
+Current mod version: `0.1.13`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.12.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.13.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -135,6 +135,7 @@ The setting order is owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `Pumas
 Wiki answers use:
 
 - `WikiClient` for MediaWiki API search/extract calls.
+- `WikiSearchQueryBuilder` for focused search candidates from natural-language questions and common Korean spelling aliases like `아비게일`.
 - `WikiMemoryCache` for in-memory query/page caching.
 - `WikiContextBuilder` for context shaping.
 - `GroundedAnswerPlanner` for Gemini prompt generation and JSON answer parsing.

@@ -19,8 +19,6 @@ public sealed class KnowledgeIntentClassifier
 
     private static readonly string[] WikiKeywords =
     {
-        "?",
-        "뭐야",
         "무엇",
         "어디",
         "언제",
@@ -37,6 +35,19 @@ public sealed class KnowledgeIntentClassifier
         "how"
     };
 
+    private static readonly string[] AssistantConversationKeywords =
+    {
+        "너",
+        "넌",
+        "너는",
+        "품앗이",
+        "pumasi",
+        "봇",
+        "도우미",
+        "할 수 있어",
+        "누구"
+    };
+
     public KnowledgeIntent Classify(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -48,6 +59,10 @@ public sealed class KnowledgeIntentClassifier
 
         var hasTaskSignal = TaskKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         var hasWikiSignal = WikiKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        var hasAssistantConversationSignal = AssistantConversationKeywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+
+        if (hasAssistantConversationSignal && !hasTaskSignal)
+            return KnowledgeIntent.Ambiguous;
 
         if (hasTaskSignal && !hasWikiSignal)
             return KnowledgeIntent.TaskPlanning;

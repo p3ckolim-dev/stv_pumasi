@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.12`
+현재 모드 버전: `0.1.13`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.12.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.13.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -135,6 +135,7 @@ pms_work <category> on|off
 위키 답변은 아래 구성요소를 사용합니다.
 
 - `WikiClient`: MediaWiki API 검색과 extract 호출.
+- `WikiSearchQueryBuilder`: 자연어 질문에서 핵심 검색어 후보를 만들고, `아비게일` 같은 흔한 표기 차이를 보정.
 - `WikiMemoryCache`: 인메모리 검색/페이지 캐시.
 - `WikiContextBuilder`: Gemini에 전달할 문맥 구성.
 - `GroundedAnswerPlanner`: Gemini 프롬프트 생성과 JSON 답변 파싱.
