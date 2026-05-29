@@ -212,10 +212,14 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         b.DrawString(Game1.smallFont, label, position + new Vector2(1, 1), Color.White * 0.4f);
         b.DrawString(Game1.smallFont, label, position, color);
 
-        var description = TrimToWidth(row.FormatDescription(language), maxWidth, Game1.tinyFont);
+        var description = TrimToWidth(
+            row.FormatDescription(language),
+            maxWidth,
+            Game1.smallFont,
+            PumasiSettingsTypography.DescriptionScale);
         var descriptionPosition = position + new Vector2(0, 34);
-        b.DrawString(Game1.tinyFont, description, descriptionPosition + new Vector2(1, 1), Color.White * 0.35f);
-        b.DrawString(Game1.tinyFont, description, descriptionPosition, editable ? MutedTextColor : MutedTextColor * 0.75f);
+        DrawScaledText(b, description, descriptionPosition + new Vector2(1, 1), Color.White * 0.35f, PumasiSettingsTypography.DescriptionScale);
+        DrawScaledText(b, description, descriptionPosition, editable ? MutedTextColor : MutedTextColor * 0.75f, PumasiSettingsTypography.DescriptionScale);
     }
 
     private bool GetValue(PumasiSettingsKey key)
@@ -290,6 +294,11 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         b.Draw(Game1.staminaRect, bounds, color);
     }
 
+    private static void DrawScaledText(SpriteBatch b, string text, Vector2 position, Color color, float scale)
+    {
+        b.DrawString(Game1.smallFont, text, position, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+    }
+
     private static string TrimToWidth(string text, int maxWidth)
     {
         return TrimToWidth(text, maxWidth, Game1.smallFont);
@@ -297,12 +306,17 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     private static string TrimToWidth(string text, int maxWidth, SpriteFont font)
     {
-        if (font.MeasureString(text).X <= maxWidth)
+        return TrimToWidth(text, maxWidth, font, 1f);
+    }
+
+    private static string TrimToWidth(string text, int maxWidth, SpriteFont font, float scale)
+    {
+        if (font.MeasureString(text).X * scale <= maxWidth)
             return text;
 
         const string suffix = "...";
         var trimmed = text;
-        while (trimmed.Length > suffix.Length && font.MeasureString(trimmed + suffix).X > maxWidth)
+        while (trimmed.Length > suffix.Length && font.MeasureString(trimmed + suffix).X * scale > maxWidth)
             trimmed = trimmed[..^1];
 
         return trimmed.Length <= suffix.Length ? suffix : trimmed + suffix;

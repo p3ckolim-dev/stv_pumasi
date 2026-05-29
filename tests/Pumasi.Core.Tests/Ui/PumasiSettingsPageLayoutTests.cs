@@ -47,19 +47,44 @@ public sealed class PumasiSettingsPageLayoutTests
     }
 
     [Fact]
-    public void CreateTabBounds_DropsBelowTabRowWhenTopRowHasNoRoom()
+    public void CreateTabBounds_AttachesToLeftSideOfTabRow()
     {
         var bounds = PumasiSettingsTabLayoutFactory.Create(
             menuX: 64,
             menuY: 128,
             menuWidth: 880,
             viewportWidth: 960,
-            anchorRight: 900,
+            anchorLeft: 136,
             anchorY: 104,
             anchorWidth: 64,
             anchorHeight: 64);
 
-        Assert.True(bounds.Right <= 960 - 24);
-        Assert.True(bounds.Y > 104);
+        Assert.Equal(72, bounds.X);
+        Assert.Equal(104, bounds.Y);
+        Assert.Equal(136, bounds.Right);
+    }
+
+    [Fact]
+    public void CreateTabBounds_ClampsLeftTabInsideViewport()
+    {
+        var bounds = PumasiSettingsTabLayoutFactory.Create(
+            menuX: 0,
+            menuY: 128,
+            menuWidth: 880,
+            viewportWidth: 960,
+            anchorLeft: 48,
+            anchorY: 104,
+            anchorWidth: 64,
+            anchorHeight: 64);
+
+        Assert.Equal(24, bounds.X);
+        Assert.Equal(104, bounds.Y);
+    }
+
+    [Fact]
+    public void SettingsTypography_UsesScaledSmallFontForDescriptions()
+    {
+        Assert.Equal(PumasiFontRole.Small, PumasiSettingsTypography.DescriptionFont);
+        Assert.InRange(PumasiSettingsTypography.DescriptionScale, 0.5f, 0.9f);
     }
 }

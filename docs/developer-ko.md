@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.19`
+현재 모드 버전: `0.1.20`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.19.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.20.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -134,7 +134,7 @@ pms_work <category> on|off
 
 - 작업 계획: `PlanWithGeminiAsync`.
 - 위키 답변: `AnswerWithWikiAsync`.
-- 애매한 요청: `ContextualIntentRouter`가 최근 대화와 현재 투두를 Gemini에 전달해 작업 계획, 위키 답변, 일반 대화 답변, 구체화 질문 중 하나로 라우팅합니다.
+- 애매한 요청과 일반 대화: `ContextualChatResponder`가 최근 대화와 현재 투두를 Gemini에 전달해 JSON 라우팅 없이 바로 자연어 답변을 생성합니다.
 
 `ConversationMemory`는 최근 12턴의 사용자/도우미 대화를 관리합니다. `ModEntry`는 호스트에서 이 데이터를 `conversation-memory` SMAPI save data 키로 읽고 쓰며, 게스트는 별도 Gemini 호출이나 대화 저장을 수행하지 않습니다.
 

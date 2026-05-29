@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.19`
+Current mod version: `0.1.20`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.19` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.20` among loaded mods.
 
 ## Updating
 
@@ -112,7 +112,7 @@ Chat aliases:
 
 ## In-Game Quick Settings
 
-Open the ESC/game menu and select the `P` Pumasi tab added to the right side of the vanilla tabs. This is a quick settings page that works even when Generic Mod Config Menu is not installed.
+Open the ESC/game menu and select the `P` Pumasi tab added to the left side of the vanilla tabs. This is a quick settings page that works even when Generic Mod Config Menu is not installed.
 
 The current Pumasi tab can toggle:
 
@@ -132,7 +132,7 @@ Each settings row also shows a short description of what the current implementat
 
 The language setting applies to Pumasi-owned UI text such as the settings page, todo board, chat command feedback, HUD notifications, and GMCM setting names. Gemini-generated answers and raw wiki-derived content may still appear in the language produced by the model/wiki.
 
-If there are more settings than fit on screen, use the mouse wheel or the right-side scrollbar to view lower rows. On screens where the top menu tab row has no room, the Pumasi tab drops below the vanilla tabs instead of overlapping them.
+If there are more settings than fit on screen, use the mouse wheel or the right-side scrollbar to view lower rows. The Pumasi tab attaches to the left side of the vanilla tab row and clamps inside the screen margin.
 
 Changes are saved immediately to `Mods/Pumasi/config.json`. In multiplayer, guests can change language and local UI settings only. Host-authoritative settings like work categories and wiki answers must be changed by the host to affect execution.
 
@@ -174,14 +174,14 @@ Guest requests are sent to the host. Guests do not need a Gemini API key. The fi
 
 ## AI And Wiki Answers
 
-`pms_ask` and `/pms` first classify input with deterministic rules. If the input is ambiguous, Gemini reviews recent conversation and current todos before choosing a route.
+`pms_ask` and `/pms` still separate clear farm-work requests from clear Stardew Valley information questions. Other casual or ambiguous messages now go straight to Gemini for a natural contextual answer instead of a JSON routing step.
 
 - Farm-work requests use Gemini for task planning.
 - Stardew Valley information questions search the Korean Stardew Valley Wiki, then Gemini answers only from that retrieved context.
 - Natural-language questions are normalized into focused search candidates first. For example, `딸기 씨앗은 어디서 사?` is retried as `딸기 씨앗`.
-- Questions about Pumasi itself and general chat questions are routed through contextual conversation instead of direct wiki search.
-- Greetings, thanks, short reactions, and context-dependent inputs like `do that` can continue as a chat answer, task plan, or wiki answer based on recent context.
-- Pumasi asks for clarification only when it still cannot infer a safe route.
+- Questions about Pumasi itself, greetings, thanks, short reactions, and context-dependent inputs use recent conversation and current todos for a direct chat answer.
+- Chat scope is limited to Stardew Valley, the current farm, todos, multiplayer farm play, and Pumasi helper conversation.
+- Off-topic questions are not answered directly; Pumasi briefly redirects back to farm help.
 
 Examples:
 

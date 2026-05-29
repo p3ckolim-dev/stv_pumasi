@@ -131,29 +131,23 @@ public static class PumasiSettingsScroll
 public static class PumasiSettingsTabLayoutFactory
 {
     private const int ScreenMargin = 24;
-    private const int MenuRightPadding = 24;
-    private const int FallbackYOffset = 8;
 
     public static PumasiSettingsTabBounds Create(
         int menuX,
         int menuY,
         int menuWidth,
         int viewportWidth,
-        int anchorRight,
+        int anchorLeft,
         int anchorY,
         int anchorWidth,
         int anchorHeight)
     {
         var width = Math.Max(48, anchorWidth);
         var height = Math.Max(48, anchorHeight);
-        var safeRight = Math.Min(viewportWidth - ScreenMargin, menuX + menuWidth - MenuRightPadding);
-        var topX = anchorRight;
+        var minX = ScreenMargin;
+        var maxX = Math.Max(minX, viewportWidth - width - ScreenMargin);
+        var x = Math.Clamp(anchorLeft - width, minX, maxX);
 
-        if (topX + width <= safeRight)
-            return new PumasiSettingsTabBounds(topX, anchorY, width, height);
-
-        var fallbackX = Math.Max(menuX + ScreenMargin, safeRight - width);
-        var fallbackY = anchorY + height + FallbackYOffset;
-        return new PumasiSettingsTabBounds(fallbackX, fallbackY, width, height);
+        return new PumasiSettingsTabBounds(x, anchorY, width, height);
     }
 }

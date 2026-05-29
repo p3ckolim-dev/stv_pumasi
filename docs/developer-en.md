@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.19`
+Current mod version: `0.1.20`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.19.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.20.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -134,7 +134,7 @@ Settings page scrolling and scrollbar calculations live in `PumasiSettingsScroll
 
 - Task planning: `PlanWithGeminiAsync`.
 - Wiki answer: `AnswerWithWikiAsync`.
-- Ambiguous: `ContextualIntentRouter` sends recent conversation and current todos to Gemini, then routes to task planning, wiki answer, chat answer, or clarification.
+- Ambiguous and casual chat: `ContextualChatResponder` sends recent conversation and current todos to Gemini, then generates a direct natural-language answer without a JSON routing step.
 
 `ConversationMemory` manages the latest 12 user/helper turns. `ModEntry` reads and writes this data on the host with the `conversation-memory` SMAPI save data key; guests do not make separate Gemini calls or persist their own conversation context.
 

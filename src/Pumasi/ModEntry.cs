@@ -317,7 +317,7 @@ public sealed class ModEntry : Mod
     {
         var anchorTab = gameMenu.tabs
             .Where(tab => tab.bounds.Width > 0 && tab.bounds.Height > 0)
-            .OrderByDescending(tab => tab.bounds.Right)
+            .OrderBy(tab => tab.bounds.X)
             .FirstOrDefault();
 
         var fallbackAnchorY = gameMenu.yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY;
@@ -326,7 +326,7 @@ public sealed class ModEntry : Mod
             gameMenu.yPositionOnScreen,
             gameMenu.width,
             Game1.uiViewport.Width,
-            anchorTab?.bounds.Right ?? gameMenu.xPositionOnScreen + 704,
+            anchorTab?.bounds.X ?? gameMenu.xPositionOnScreen + PumasiSettingsTabSize,
             anchorTab?.bounds.Y ?? fallbackAnchorY,
             anchorTab?.bounds.Width ?? PumasiSettingsTabSize,
             anchorTab?.bounds.Height ?? PumasiSettingsTabSize);
@@ -851,12 +851,12 @@ public sealed class ModEntry : Mod
 
             case KnowledgeIntent.Ambiguous:
             default:
-                await RouteAmbiguousInputWithGeminiAsync(instruction).ConfigureAwait(false);
+                await AnswerContextualChatWithGeminiAsync(instruction).ConfigureAwait(false);
                 break;
         }
     }
 
-    private async Task RouteAmbiguousInputWithGeminiAsync(string instruction)
+    private async Task AnswerContextualChatWithGeminiAsync(string instruction)
     {
         if (!RequireHost())
             return;
@@ -876,40 +876,14 @@ public sealed class ModEntry : Mod
                 .Select((item, index) => $"#{index + 1} {item.Key} [{item.Status}] {item.Reason}")
                 .ToArray();
 
-            var prompt = ContextualIntentRouter.BuildPrompt(instruction, conversationMemory.Turns, currentTodos);
+            var prompt = ContextualChatResponder.BuildPrompt(instruction, conversationMemory.Turns, currentTodos);
             var modelText = await client.GenerateTextAsync(prompt).ConfigureAwait(false);
-            var routed = ContextualIntentRouter.ParseResponse(modelText);
-            if (!routed.Success)
-            {
-                Monitor.Log($"Contextual intent routing failed: {routed.Error}", LogLevel.Warn);
-                PublishHelperAnswer(T(PumasiTextKey.ContextRoutingUnreadable), Array.Empty<string>());
-                return;
-            }
-
-            var rewritten = string.IsNullOrWhiteSpace(routed.RewrittenInput) ? instruction : routed.RewrittenInput;
-            switch (routed.Intent)
-            {
-                case ContextualIntentKind.TaskPlanning:
-                    await PlanWithGeminiAsync(rewritten).ConfigureAwait(false);
-                    break;
-
-                case ContextualIntentKind.WikiAnswer:
-                    await AnswerWithWikiAsync(rewritten).ConfigureAwait(false);
-                    break;
-
-                case ContextualIntentKind.ChatAnswer:
-                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? T(PumasiTextKey.ChatAnswerFallback) : routed.Answer, Array.Empty<string>());
-                    break;
-
-                case ContextualIntentKind.Clarify:
-                default:
-                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? T(PumasiTextKey.ClarifyFallback) : routed.Answer, Array.Empty<string>());
-                    break;
-            }
+            var answer = ContextualChatResponder.CleanAnswer(modelText);
+            PublishHelperAnswer(string.IsNullOrWhiteSpace(answer) ? T(PumasiTextKey.ChatAnswerFallback) : answer, Array.Empty<string>());
         }
         catch (Exception ex)
         {
-            Monitor.Log($"Contextual intent routing error: {ex.Message}", LogLevel.Warn);
+            Monitor.Log($"Contextual chat answer error: {ex.Message}", LogLevel.Warn);
             PublishHelperAnswer(T(PumasiTextKey.ContextReadError), Array.Empty<string>());
         }
     }
