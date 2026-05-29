@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.17`
+Current mod version: `0.1.18`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.17.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.18.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -84,7 +84,7 @@ SMAPI prints the exact `Mods go here:` path at startup. Prefer that path when te
 
 `MultiplayerSyncService` broadcasts host-owned state and routes guest commands back to the host.
 
-`Pumasi.Core.Chat.HelperChatFormatter` formats helper answers for in-game chat.
+`Pumasi.Core.Chat.HelperChatFormatter` formats helper answers for in-game chat. Wiki source metadata may remain in message models, but source lines are not shown in chat or console logs.
 
 ## Command Flow
 
@@ -122,9 +122,9 @@ Todo execution is top-to-bottom by visible queue order. Morning farm scans enque
 
 `PumasiSettingsPage` is a quick settings page appended to Stardew `GameMenu.pages`. Vanilla `GameMenu.getTabNumberFromName` only knows vanilla tab names, so Pumasi does not directly add a custom tab to `GameMenu.tabs`. Instead, it draws a `P` tab in `RenderedActiveMenu` and detects clicks through the SMAPI input event, then switches `currentTab` to the Pumasi page index.
 
-The setting order is owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `PumasiSettingsCatalogTests` verifies the row order and labels.
+The setting order, labels, and short descriptions are owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `PumasiSettingsCatalogTests` verifies the row order and label/description presence.
 
-The language setting is stored in `UiConfig.Language`. Pumasi-owned UI text is selected through `Pumasi.Core.Ui.PumasiText`, and settings row labels are formatted by `PumasiSettingsCatalog` using the same language setting.
+The language setting is stored in `UiConfig.Language`. Pumasi-owned UI text is selected through `Pumasi.Core.Ui.PumasiText`, and settings row labels/descriptions are formatted by `PumasiSettingsCatalog` using the same language setting.
 
 Settings page scrolling and scrollbar calculations live in `PumasiSettingsScroll`, and custom `P` tab placement is calculated by `PumasiSettingsTabLayoutFactory` based on available room in the top tab row.
 

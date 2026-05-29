@@ -16,7 +16,7 @@ public sealed class HelperChatFormatterTests
     }
 
     [Fact]
-    public void FormatAnswer_AddsSourceLineWithLimit()
+    public void FormatAnswer_HidesSourcesFromChatOutput()
     {
         var lines = HelperChatFormatter.FormatAnswer(
             "품앗이",
@@ -29,13 +29,12 @@ public sealed class HelperChatFormatterTests
                 "피에르네 잡화점 - https://ko.stardewvalleywiki.com/피에르네_잡화점"
             });
 
-        Assert.Equal(2, lines.Count);
-        Assert.Equal("품앗이: 딸기 씨앗은 축제에서 살 수 있어요.", lines[0]);
-        Assert.Equal("출처: 딸기 - https://ko.stardewvalleywiki.com/딸기, 달걀 축제 - https://ko.stardewvalleywiki.com/달걀_축제, 봄 - https://ko.stardewvalleywiki.com/봄 외 1개", lines[1]);
+        var line = Assert.Single(lines);
+        Assert.Equal("품앗이: 딸기 씨앗은 축제에서 살 수 있어요.", line);
     }
 
     [Fact]
-    public void FormatAnswer_UsesEnglishSourceLineWhenSelected()
+    public void FormatAnswer_HidesEnglishSourcesFromChatOutput()
     {
         var lines = HelperChatFormatter.FormatAnswer(
             "Pumasi",
@@ -43,9 +42,8 @@ public sealed class HelperChatFormatterTests
             new[] { "Strawberry", "Egg Festival", "Spring", "Pierre" },
             UiLanguage.English);
 
-        Assert.Equal(2, lines.Count);
-        Assert.Equal("Pumasi: Strawberry seeds are sold at the Egg Festival.", lines[0]);
-        Assert.Equal("Sources: Strawberry, Egg Festival, Spring and 1 more", lines[1]);
+        var line = Assert.Single(lines);
+        Assert.Equal("Pumasi: Strawberry seeds are sold at the Egg Festival.", line);
     }
 
     [Fact]

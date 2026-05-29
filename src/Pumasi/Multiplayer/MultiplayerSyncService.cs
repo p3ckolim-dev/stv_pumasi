@@ -100,8 +100,6 @@ internal sealed class MultiplayerSyncService
             case MessageTypes.HelperAnswer when !Context.IsMainPlayer:
                 LatestAnswer = e.ReadAs<HelperAnswerMessage>();
                 monitor.Log($"pumasi answer: {LatestAnswer.Answer}", LogLevel.Info);
-                if (LatestAnswer.Sources.Count > 0)
-                    monitor.Log($"sources: {string.Join(", ", LatestAnswer.Sources)}", LogLevel.Info);
                 if (Context.IsWorldReady)
                 {
                     PostHelperAnswerToChat(LatestAnswer);

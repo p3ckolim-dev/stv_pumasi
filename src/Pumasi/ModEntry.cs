@@ -1015,8 +1015,6 @@ public sealed class ModEntry : Mod
         helperState.Status = answer.Length > 96 ? answer[..96] + "..." : answer;
         multiplayer.BroadcastHelperAnswer(new HelperAnswerMessage(answer, sources));
         Monitor.Log($"pumasi answer: {answer}", LogLevel.Info);
-        if (sources.Count > 0)
-            Monitor.Log($"sources: {string.Join(", ", sources)}", LogLevel.Info);
         PostHelperAnswerToChat(answer, sources);
         if (Context.IsWorldReady)
             Game1.addHUDMessage(new HUDMessage($"{helperState.Name}: {helperState.Status}"));

@@ -94,7 +94,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
             else
                 DrawCheckbox(b, checkboxBounds, enabled, editable);
 
-            DrawRowLabel(b, row, config.Ui.Language, new Vector2(layout.RowLabelX, rowY + 6), layout.RowLabelMaxWidth, editable);
+            DrawRowLabel(b, row, config.Ui.Language, new Vector2(layout.RowLabelX, rowY + 4), layout.RowLabelMaxWidth, editable);
             rowHitAreas.Add(new RowHitArea(row, rowBounds));
         }
 
@@ -211,6 +211,11 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         label = TrimToWidth(label, maxWidth);
         b.DrawString(Game1.smallFont, label, position + new Vector2(1, 1), Color.White * 0.4f);
         b.DrawString(Game1.smallFont, label, position, color);
+
+        var description = TrimToWidth(row.FormatDescription(language), maxWidth, Game1.tinyFont);
+        var descriptionPosition = position + new Vector2(0, 34);
+        b.DrawString(Game1.tinyFont, description, descriptionPosition + new Vector2(1, 1), Color.White * 0.35f);
+        b.DrawString(Game1.tinyFont, description, descriptionPosition, editable ? MutedTextColor : MutedTextColor * 0.75f);
     }
 
     private bool GetValue(PumasiSettingsKey key)
@@ -287,12 +292,17 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     private static string TrimToWidth(string text, int maxWidth)
     {
-        if (Game1.smallFont.MeasureString(text).X <= maxWidth)
+        return TrimToWidth(text, maxWidth, Game1.smallFont);
+    }
+
+    private static string TrimToWidth(string text, int maxWidth, SpriteFont font)
+    {
+        if (font.MeasureString(text).X <= maxWidth)
             return text;
 
         const string suffix = "...";
         var trimmed = text;
-        while (trimmed.Length > suffix.Length && Game1.smallFont.MeasureString(trimmed + suffix).X > maxWidth)
+        while (trimmed.Length > suffix.Length && font.MeasureString(trimmed + suffix).X > maxWidth)
             trimmed = trimmed[..^1];
 
         return trimmed.Length <= suffix.Length ? suffix : trimmed + suffix;

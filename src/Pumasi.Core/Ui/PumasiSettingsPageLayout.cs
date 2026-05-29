@@ -42,7 +42,7 @@ public static class PumasiSettingsPageLayoutFactory
     private const int TitleHeight = 48;
     private const int SubtitleHeight = 28;
     private const int TitleToRowsGap = 20;
-    private const int RowHeight = 56;
+    private const int RowHeight = 68;
     private const int CheckboxSize = 32;
     private const int CheckboxTextGap = 20;
     private const int ScrollbarWidth = 18;

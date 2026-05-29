@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.17`
+Current mod version: `0.1.18`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.17` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.18` among loaded mods.
 
 ## Updating
 
@@ -121,6 +121,14 @@ The current Pumasi tab can toggle:
 - Helper notification visibility.
 - Crop, machine, animal, chest, and planting work categories.
 - Korean Wiki answer support.
+
+Each settings row also shows a short description of what the current implementation can do.
+
+- Crop work: water dry crops, harvest ready crops, and till plain ground around sprinklers.
+- Machine work: collect ready machine output.
+- Animal work: refill hay in animal buildings.
+- Chest work: coming soon.
+- Planting work: coming soon.
 
 The language setting applies to Pumasi-owned UI text such as the settings page, todo board, chat command feedback, HUD notifications, and GMCM setting names. Gemini-generated answers and raw wiki-derived content may still appear in the language produced by the model/wiki.
 
@@ -207,8 +215,9 @@ Answers appear in chat like this:
 
 ```text
 Pumasi: 딸기 씨앗은 봄 달걀 축제에서 살 수 있어요.
-출처: 딸기 - https://ko.stardewvalleywiki.com/딸기
 ```
+
+Source metadata may still be kept internally for answer generation, but in-game answers and console logs do not display source lines.
 
 ## Todo And Automation
 
