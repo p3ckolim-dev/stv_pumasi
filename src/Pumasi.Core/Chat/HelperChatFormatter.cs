@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Pumasi.Core.Configuration;
+using Pumasi.Core.Ui;
 
 namespace Pumasi.Core.Chat;
 
@@ -7,7 +9,11 @@ public static class HelperChatFormatter
     private const int MaxSourcesInChat = 3;
     private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
 
-    public static IReadOnlyList<string> FormatAnswer(string helperName, string answer, IReadOnlyList<string> sources)
+    public static IReadOnlyList<string> FormatAnswer(
+        string helperName,
+        string answer,
+        IReadOnlyList<string> sources,
+        UiLanguage language = UiLanguage.Korean)
     {
         var name = Normalize(helperName);
         if (string.IsNullOrWhiteSpace(name))
@@ -23,11 +29,19 @@ public static class HelperChatFormatter
         if (cleanSources.Length > 0)
         {
             var shown = cleanSources.Take(MaxSourcesInChat).ToArray();
-            var suffix = cleanSources.Length > shown.Length ? $" 외 {cleanSources.Length - shown.Length}개" : string.Empty;
-            lines.Add($"출처: {string.Join(", ", shown)}{suffix}");
+            var suffix = FormatMoreSources(language, cleanSources.Length - shown.Length);
+            lines.Add($"{PumasiText.Get(language, PumasiTextKey.SourcePrefix)}: {string.Join(", ", shown)}{suffix}");
         }
 
         return lines;
+    }
+
+    private static string FormatMoreSources(UiLanguage language, int count)
+    {
+        if (count <= 0)
+            return string.Empty;
+
+        return language == UiLanguage.English ? $" and {count} more" : $" 외 {count}개";
     }
 
     private static string Normalize(string value)

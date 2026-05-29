@@ -31,7 +31,6 @@ public sealed class ModEntry : Mod
     private const string ChatCommandName = "p3ckolim.pms_pms";
     private const string ConversationMemoryDataKey = "conversation-memory";
     private const int ConversationHistoryLimit = 12;
-    private const string PumasiSettingsTabLabel = "Pumasi";
     private const int PumasiSettingsTabSize = 64;
 
     private ConfigService configService = null!;
@@ -57,10 +56,10 @@ public sealed class ModEntry : Mod
         taskManager = new TaskManager();
         helperState = new HelperRuntimeState { Name = configService.Config.Assistant.Name };
         scanner = new FarmTaskScanner();
-        executor = new FarmTaskExecutor(helperState);
-        overlay = new TodoOverlay { Visible = configService.Config.Ui.ShowTodoOverlay };
+        executor = new FarmTaskExecutor(helperState, type => PumasiText.GetTaskType(Language, type));
+        overlay = new TodoOverlay { Visible = configService.Config.Ui.ShowTodoOverlay, Language = configService.Config.Ui.Language };
         wikiCache = new WikiMemoryCache();
-        multiplayer = new MultiplayerSyncService(helper, Monitor, ModManifest, HandleGuestCommand);
+        multiplayer = new MultiplayerSyncService(helper, Monitor, ModManifest, HandleGuestCommand, () => Language);
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
@@ -82,6 +81,9 @@ public sealed class ModEntry : Mod
     }
 
     private ModConfig Config => configService.Config;
+    private UiLanguage Language => Config.Ui.Language;
+    private string T(PumasiTextKey key) => PumasiText.Get(Language, key);
+    private string T(PumasiTextKey key, params object[] args) => PumasiText.Format(Language, key, args);
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
@@ -106,7 +108,7 @@ public sealed class ModEntry : Mod
             ChatCommands.Register(
                 ChatCommandName,
                 OnPmsChatCommand,
-                _ => "/pms status | /pms scan | /pms todo [move/up/down] | /pms animals on|off | /pms ask <질문/작업>",
+                _ => T(PumasiTextKey.HelpUsage),
                 new[] { "pms", "pms_ask", "pms_status", "pms_scan", "pms_todo", "pms_work", "pms_key" },
                 mainOnly: false,
                 multiplayerOnly: false,
@@ -131,7 +133,7 @@ public sealed class ModEntry : Mod
     {
         LoadConversationMemory();
         helperState.Name = Config.Assistant.Name;
-        helperState.Status = Context.IsMainPlayer ? "Host idle" : "Guest view";
+        helperState.Status = Context.IsMainPlayer ? T(PumasiTextKey.HostIdle) : T(PumasiTextKey.GuestView);
         BroadcastState();
     }
 
@@ -177,6 +179,7 @@ public sealed class ModEntry : Mod
 
     private void OnRenderedHud(object? sender, RenderedHudEventArgs e)
     {
+        overlay.Language = Language;
         var snapshot = Context.IsMainPlayer ? taskManager.CreateSnapshot() : multiplayer.LatestSnapshot;
         overlay.Draw(e.SpriteBatch, snapshot, helperState, multiplayer.LatestHelperState);
     }
@@ -297,6 +300,7 @@ public sealed class ModEntry : Mod
     private void OnPumasiSettingsChanged()
     {
         overlay.Visible = Config.Ui.ShowTodoOverlay;
+        overlay.Language = Language;
         helperState.Name = Config.Assistant.Name;
         BroadcastState();
     }
@@ -346,7 +350,7 @@ public sealed class ModEntry : Mod
         spriteBatch.DrawString(Game1.smallFont, label, labelPosition, Color.DarkGreen);
 
         if (pumasiSettingsTabBounds.Contains(Game1.getMouseX(), Game1.getMouseY()))
-            IClickableMenu.drawHoverText(spriteBatch, PumasiSettingsTabLabel, Game1.smallFont);
+            IClickableMenu.drawHoverText(spriteBatch, T(PumasiTextKey.SettingsTitle), Game1.smallFont);
     }
 
     private void OnStatusCommand(string command, string[] args)
@@ -369,18 +373,18 @@ public sealed class ModEntry : Mod
     {
         if (!Context.IsMainPlayer)
         {
-            Monitor.Log("Only the host should configure the Gemini API key.", LogLevel.Warn);
+            Monitor.Log(T(PumasiTextKey.HostOnlyCommand), LogLevel.Warn);
             return;
         }
 
         if (args.Length != 1 || string.IsNullOrWhiteSpace(args[0]))
         {
-            Monitor.Log("Usage: pms_key <gemini-api-key>", LogLevel.Info);
+            Monitor.Log(T(PumasiTextKey.ApiKeyUsage), LogLevel.Info);
             return;
         }
 
         configService.SetGeminiApiKey(args[0]);
-        Monitor.Log("Gemini API key saved locally. It will not be synced to guests.", LogLevel.Info);
+        Monitor.Log(T(PumasiTextKey.ApiKeySaved), LogLevel.Info);
     }
 
     private void OnTodoCommand(string command, string[] args)
@@ -418,11 +422,11 @@ public sealed class ModEntry : Mod
                 break;
 
             case PumasiCommandKind.Help:
-                SendCommandFeedback("사용법: /pms status, /pms scan, /pms todo, /pms todo move 3 1, /pms animals on|off, /pms ask <질문/작업>, /pms <질문/작업>", surface);
+                SendCommandFeedback(T(PumasiTextKey.HelpUsage), surface);
                 break;
 
             case PumasiCommandKind.ApiKeyRejected:
-                SendCommandFeedback("API KEY는 인게임 채팅에 입력하지 말고 SMAPI 콘솔의 pms_key <key> 또는 config.json에서 설정해줘요.", surface, LogLevel.Warn);
+                SendCommandFeedback(T(PumasiTextKey.ApiKeyChatRejected), surface, LogLevel.Warn);
                 break;
 
             case PumasiCommandKind.None:
@@ -440,7 +444,7 @@ public sealed class ModEntry : Mod
         }
 
         multiplayer.SendGuestCommand(instruction);
-        SendCommandFeedback("호스트에게 pumasi 요청을 보냈어요.", surface);
+        SendCommandFeedback(T(PumasiTextKey.GuestRequestSent), surface);
     }
 
     private void ScanForTasks(CommandSurface surface)
@@ -449,7 +453,7 @@ public sealed class ModEntry : Mod
             return;
 
         var added = EnqueueScanResults();
-        SendCommandFeedback($"Queued {added} scanned task(s).", surface);
+        SendCommandFeedback(T(PumasiTextKey.ScanQueuedTasks, added), surface);
     }
 
     private void ShowTodoList(CommandSurface surface)
@@ -468,7 +472,7 @@ public sealed class ModEntry : Mod
         {
             if (!Context.IsMainPlayer)
             {
-                SendCommandFeedback("Todo reorder is host-only. Guests can view the synced todo list.", surface, LogLevel.Warn);
+                SendCommandFeedback(T(PumasiTextKey.TodoReorderHostOnly), surface, LogLevel.Warn);
                 return;
             }
 
@@ -481,14 +485,16 @@ public sealed class ModEntry : Mod
 
         if (visibleItems.Length == 0)
         {
-            SendCommandFeedback("Todo list is empty.", surface);
+            SendCommandFeedback(T(PumasiTextKey.TodoListEmpty), surface);
             return;
         }
 
         for (var i = 0; i < visibleItems.Length; i++)
         {
             var item = visibleItems[i];
-            SendCommandFeedback($"#{i + 1} [{item.Status}] {item.Type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
+            var status = PumasiText.GetTaskStatus(Language, item.Status);
+            var type = PumasiText.GetTaskType(Language, item.Type);
+            SendCommandFeedback($"#{i + 1} [{status}] {type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
         }
     }
 
@@ -500,18 +506,18 @@ public sealed class ModEntry : Mod
 
         if (!TryResolveTodoMove(parts, visibleCount, out var from, out var to, out var error))
         {
-                SendCommandFeedback($"Todo reorder usage: /pms todo move <from> <to>, /pms todo up <index>, /pms todo down <index>, /pms todo top <index>, /pms todo bottom <index>. {error}", surface, LogLevel.Warn);
+            SendCommandFeedback(T(PumasiTextKey.TodoReorderUsage, error), surface, LogLevel.Warn);
             return;
         }
 
         var result = taskManager.MoveActiveTask(from, to);
         if (!result.Moved)
         {
-            SendCommandFeedback($"Todo reorder failed: {result.Reason}", surface, LogLevel.Warn);
+            SendCommandFeedback(T(PumasiTextKey.TodoReorderFailed, result.Reason), surface, LogLevel.Warn);
             return;
         }
 
-        SendCommandFeedback(result.Reason == "no-change" ? "Todo order unchanged." : $"Moved todo #{from} to #{to}.", surface);
+        SendCommandFeedback(result.Reason == "no-change" ? T(PumasiTextKey.TodoOrderUnchanged) : T(PumasiTextKey.TodoMoved, from, to), surface);
         BroadcastState();
     }
 
@@ -519,8 +525,8 @@ public sealed class ModEntry : Mod
     {
         var result = taskManager.MoveActiveTask(move.FromPosition, move.ToPosition);
         var message = result.Moved
-            ? result.Reason == "no-change" ? "Todo order unchanged." : $"Moved todo #{move.FromPosition} to #{move.ToPosition}."
-            : $"Todo reorder failed: {result.Reason}";
+            ? result.Reason == "no-change" ? T(PumasiTextKey.TodoOrderUnchanged) : T(PumasiTextKey.TodoMoved, move.FromPosition, move.ToPosition)
+            : T(PumasiTextKey.TodoReorderFailed, result.Reason);
 
         helperState.Status = message;
         Monitor.Log(message, result.Moved ? LogLevel.Info : LogLevel.Warn);
@@ -542,7 +548,7 @@ public sealed class ModEntry : Mod
 
         if (!TryResolveWorkCategory(parts[0], out var categoryName, out var getter, out var setter))
         {
-            SendCommandFeedback("Work category usage: /pms animals on|off 또는 /pms work animals on|off. Categories: crops, machines, animals, chests, planting.", surface, LogLevel.Warn);
+            SendCommandFeedback(T(PumasiTextKey.WorkCategoryUsage), surface, LogLevel.Warn);
             return;
         }
 
@@ -554,17 +560,17 @@ public sealed class ModEntry : Mod
 
         if (!TryParseOnOff(parts[1], out var enabled))
         {
-            SendCommandFeedback("Use on/off, enable/disable, true/false, 또는 켜/꺼.", surface, LogLevel.Warn);
+            SendCommandFeedback(T(PumasiTextKey.OnOffUsage), surface, LogLevel.Warn);
             return;
         }
 
         setter(enabled);
         configService.Save();
         BroadcastState();
-        SendCommandFeedback($"{categoryName} 작업 카테고리를 {FormatOnOff(enabled)} 상태로 저장했어요.", surface);
+        SendCommandFeedback(T(PumasiTextKey.WorkCategorySaved, categoryName, FormatOnOff(enabled)), surface);
     }
 
-    private static bool TryResolveTodoMove(string[] parts, int visibleCount, out int from, out int to, out string error)
+    private bool TryResolveTodoMove(string[] parts, int visibleCount, out int from, out int to, out string error)
     {
         from = 0;
         to = 0;
@@ -572,7 +578,7 @@ public sealed class ModEntry : Mod
 
         if (visibleCount == 0)
         {
-            error = "There are no active todos.";
+            error = T(PumasiTextKey.NoActiveTodos);
             return false;
         }
 
@@ -599,7 +605,7 @@ public sealed class ModEntry : Mod
                 return true;
 
             default:
-                error = "Unknown reorder command.";
+                error = T(PumasiTextKey.UnknownReorderCommand);
                 return false;
         }
     }
@@ -611,13 +617,19 @@ public sealed class ModEntry : Mod
 
     private string BuildStatusMessage()
     {
-        return $"pumasi (품앗이): host={Context.IsMainPlayer}, mode={Config.Assistant.AutomationMode}, geminiConfigured={Config.Gemini.IsConfigured}, todos={taskManager.Tasks.Count}, contextTurns={conversationMemory.Turns.Count}";
+        return T(PumasiTextKey.StatusMessage, Context.IsMainPlayer, Config.Assistant.AutomationMode, Config.Gemini.IsConfigured, taskManager.Tasks.Count, conversationMemory.Turns.Count);
     }
 
     private string BuildWorkCategoryStatus()
     {
         var categories = Config.Assistant.WorkCategories;
-        return $"work: crops={FormatOnOff(categories.Crops)}, machines={FormatOnOff(categories.Machines)}, animals={FormatOnOff(categories.Animals)}, chests={FormatOnOff(categories.Chests)}, planting={FormatOnOff(categories.Planting)}";
+        return T(
+            PumasiTextKey.WorkCategoryStatus,
+            FormatOnOff(categories.Crops),
+            FormatOnOff(categories.Machines),
+            FormatOnOff(categories.Animals),
+            FormatOnOff(categories.Chests),
+            FormatOnOff(categories.Planting));
     }
 
     private bool TryResolveWorkCategory(
@@ -702,9 +714,9 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private static string FormatOnOff(bool enabled)
+    private string FormatOnOff(bool enabled)
     {
-        return enabled ? "on" : "off";
+        return PumasiText.FormatOnOff(Language, enabled);
     }
 
     private bool RequireHost(CommandSurface surface = CommandSurface.Console)
@@ -712,7 +724,7 @@ public sealed class ModEntry : Mod
         if (Context.IsMainPlayer)
             return true;
 
-        SendCommandFeedback("This command is host-only. Guests send commands through /pms ask.", surface, LogLevel.Warn);
+        SendCommandFeedback(T(PumasiTextKey.HostOnlyCommand), surface, LogLevel.Warn);
         return false;
     }
 
@@ -735,8 +747,8 @@ public sealed class ModEntry : Mod
 
         var added = EnqueueScanResults(limit, broadcast: false);
         helperState.Status = added > 0
-            ? $"Morning scan queued {added} todo(s)"
-            : "Morning scan found no new todos";
+            ? T(PumasiTextKey.MorningScanQueued, added)
+            : T(PumasiTextKey.MorningScanFoundNoTodos);
         Monitor.Log(helperState.Status, LogLevel.Info);
         BroadcastState();
     }
@@ -768,7 +780,7 @@ public sealed class ModEntry : Mod
 
         if (!Config.Gemini.IsConfigured)
         {
-            Monitor.Log("Gemini is not configured. Run pms_key <key> and check config.json for model/base URL settings.", LogLevel.Warn);
+            Monitor.Log(T(PumasiTextKey.GeminiNotConfiguredForPlanning), LogLevel.Warn);
             return;
         }
 
@@ -801,7 +813,7 @@ public sealed class ModEntry : Mod
                     accepted++;
             }
 
-            helperState.Status = string.IsNullOrWhiteSpace(plan.Message) ? $"Gemini queued {accepted} task(s)" : plan.Message;
+            helperState.Status = string.IsNullOrWhiteSpace(plan.Message) ? T(PumasiTextKey.GeminiQueuedTasks, accepted) : plan.Message;
             RememberConversation("assistant", helperState.Status);
             BroadcastState();
         }
@@ -840,7 +852,7 @@ public sealed class ModEntry : Mod
 
         if (!Config.Gemini.IsConfigured)
         {
-            PublishHelperAnswer("이 말은 맥락을 봐야 이해할 수 있는데 Gemini가 아직 설정되어 있지 않아요. SMAPI 콘솔에서 pms_key <key>를 먼저 설정해줘요.", Array.Empty<string>());
+            PublishHelperAnswer(T(PumasiTextKey.ContextGeminiMissing), Array.Empty<string>());
             return;
         }
 
@@ -859,7 +871,7 @@ public sealed class ModEntry : Mod
             if (!routed.Success)
             {
                 Monitor.Log($"Contextual intent routing failed: {routed.Error}", LogLevel.Warn);
-                PublishHelperAnswer("말뜻을 이해하려고 했는데 라우팅 답변을 읽지 못했어요. 한 번만 다르게 말해줘요.", Array.Empty<string>());
+                PublishHelperAnswer(T(PumasiTextKey.ContextRoutingUnreadable), Array.Empty<string>());
                 return;
             }
 
@@ -875,19 +887,19 @@ public sealed class ModEntry : Mod
                     break;
 
                 case ContextualIntentKind.ChatAnswer:
-                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? "응, 듣고 있어요." : routed.Answer, Array.Empty<string>());
+                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? T(PumasiTextKey.ChatAnswerFallback) : routed.Answer, Array.Empty<string>());
                     break;
 
                 case ContextualIntentKind.Clarify:
                 default:
-                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? "조금만 더 알려줘요. 맥락을 보고도 확신하기 어려워요." : routed.Answer, Array.Empty<string>());
+                    PublishHelperAnswer(string.IsNullOrWhiteSpace(routed.Answer) ? T(PumasiTextKey.ClarifyFallback) : routed.Answer, Array.Empty<string>());
                     break;
             }
         }
         catch (Exception ex)
         {
             Monitor.Log($"Contextual intent routing error: {ex.Message}", LogLevel.Warn);
-            PublishHelperAnswer("대화 맥락을 읽는 중 문제가 생겼어요. 잠깐 뒤에 다시 말해줘요.", Array.Empty<string>());
+            PublishHelperAnswer(T(PumasiTextKey.ContextReadError), Array.Empty<string>());
         }
     }
 
@@ -898,7 +910,7 @@ public sealed class ModEntry : Mod
 
         if (!Config.WikiAnswers.WikiAnswersEnabled)
         {
-            PublishHelperAnswer("위키 기반 답변 기능이 꺼져 있어요.", Array.Empty<string>());
+            PublishHelperAnswer(T(PumasiTextKey.WikiAnswersDisabled), Array.Empty<string>());
             return;
         }
 
@@ -906,7 +918,7 @@ public sealed class ModEntry : Mod
         var now = DateTimeOffset.UtcNow;
         if (cooldown > TimeSpan.Zero && now - lastWikiQuestionAt < cooldown)
         {
-            PublishHelperAnswer("위키 질문은 잠깐 쉬었다가 다시 물어봐 주세요.", Array.Empty<string>());
+            PublishHelperAnswer(T(PumasiTextKey.WikiCooldown), Array.Empty<string>());
             return;
         }
 
@@ -922,7 +934,7 @@ public sealed class ModEntry : Mod
                 var search = await wikiClient.SearchAsync(question, Math.Max(1, Config.WikiAnswers.WikiMaxPages)).ConfigureAwait(false);
                 if (!search.Success)
                 {
-                    PublishHelperAnswer("지금은 위키에 접속할 수 없어서 확인하지 못했어요.", Array.Empty<string>());
+                    PublishHelperAnswer(T(PumasiTextKey.WikiUnavailable), Array.Empty<string>());
                     return;
                 }
 
@@ -932,7 +944,7 @@ public sealed class ModEntry : Mod
 
             if (searchResults.Count == 0)
             {
-                PublishHelperAnswer("한국어 위키에서 관련 내용을 찾지 못했어요.", Array.Empty<string>());
+                PublishHelperAnswer(T(PumasiTextKey.WikiNoResults), Array.Empty<string>());
                 return;
             }
 
@@ -963,7 +975,7 @@ public sealed class ModEntry : Mod
 
             if (!Config.Gemini.IsConfigured)
             {
-                PublishHelperAnswer("위키 페이지는 찾았지만 Gemini가 설정되어 있지 않아 요약할 수 없어요.", FormatSources(context.Sources));
+                PublishHelperAnswer(T(PumasiTextKey.WikiGeminiMissingSummary), FormatSources(context.Sources));
                 return;
             }
 
@@ -973,7 +985,7 @@ public sealed class ModEntry : Mod
             var answer = GroundedAnswerPlanner.ParseAnswer(modelText);
             if (!answer.Success)
             {
-                PublishHelperAnswer("위키 자료는 찾았지만 답변 요약을 만들지 못했어요. 출처를 확인해 주세요.", FormatSources(context.Sources));
+                PublishHelperAnswer(T(PumasiTextKey.WikiSummaryFailed), FormatSources(context.Sources));
                 return;
             }
 
@@ -982,7 +994,7 @@ public sealed class ModEntry : Mod
         catch (Exception ex)
         {
             Monitor.Log($"Wiki grounded answer failed: {ex.Message}", LogLevel.Warn);
-            PublishHelperAnswer("지금은 위키 기반 답변을 만들 수 없어요.", Array.Empty<string>());
+            PublishHelperAnswer(T(PumasiTextKey.WikiAnswerFailed), Array.Empty<string>());
         }
     }
 
@@ -1053,7 +1065,7 @@ public sealed class ModEntry : Mod
         if (!Context.IsWorldReady)
             return;
 
-        foreach (var line in HelperChatFormatter.FormatAnswer(helperState.Name, answer, sources))
+        foreach (var line in HelperChatFormatter.FormatAnswer(helperState.Name, answer, sources, Language))
             Game1.chatBox?.addMessage(line, Color.LightGreen);
     }
 
@@ -1070,7 +1082,7 @@ public sealed class ModEntry : Mod
         var claimed = taskManager.ClaimNext();
         if (claimed is null)
         {
-            helperState.Status = "Idle";
+            helperState.Status = T(PumasiTextKey.TodoIdle);
             helperState.CurrentTaskKey = null;
             return;
         }
@@ -1085,7 +1097,7 @@ public sealed class ModEntry : Mod
         else
             taskManager.Fail(claimed.Id, result.Reason);
 
-        helperState.Status = result.Reason;
+        helperState.Status = PumasiText.GetExecutionReason(Language, result.Reason);
         helperState.CurrentTaskKey = null;
         BroadcastState();
     }

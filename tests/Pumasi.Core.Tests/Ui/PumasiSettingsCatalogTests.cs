@@ -1,4 +1,5 @@
 using Pumasi.Core.Ui;
+using Pumasi.Core.Configuration;
 using Xunit;
 
 namespace Pumasi.Core.Tests.Ui;
@@ -12,6 +13,7 @@ public sealed class PumasiSettingsCatalogTests
 
         Assert.Collection(
             rows,
+            row => Assert.Equal(PumasiSettingsKey.Language, row.Key),
             row => Assert.Equal(PumasiSettingsKey.ShowTodoOverlay, row.Key),
             row => Assert.Equal(PumasiSettingsKey.ShowHelperStatusNotifications, row.Key),
             row => Assert.Equal(PumasiSettingsKey.WorkCrops, row.Key),
@@ -29,5 +31,14 @@ public sealed class PumasiSettingsCatalogTests
 
         Assert.All(rows, row => Assert.False(string.IsNullOrWhiteSpace(row.EnglishLabel)));
         Assert.All(rows, row => Assert.False(string.IsNullOrWhiteSpace(row.KoreanLabel)));
+    }
+
+    [Fact]
+    public void FormatRowLabel_UsesSelectedLanguage()
+    {
+        var row = PumasiSettingsCatalog.CreateRows().Single(row => row.Key == PumasiSettingsKey.WorkAnimals);
+
+        Assert.Equal("Animal work", row.FormatLabel(UiLanguage.English));
+        Assert.Equal("동물 작업", row.FormatLabel(UiLanguage.Korean));
     }
 }

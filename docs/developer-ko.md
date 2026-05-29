@@ -4,7 +4,7 @@
 
 이 문서는 `pumasi`를 포크해서 수정, 테스트, 확장하려는 개발자를 위한 문서입니다.
 
-현재 모드 버전: `0.1.15`
+현재 모드 버전: `0.1.16`
 
 ## 저장소 구조
 
@@ -40,7 +40,7 @@ docs/
 빌드가 SMAPI zip을 생성합니다.
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.15.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.16.zip
 ```
 
 `.dotnet/` 디렉터리는 git에서 제외되어 있으므로 로컬 SDK를 설치해도 커밋되지 않습니다.
@@ -123,6 +123,8 @@ pms_work <category> on|off
 `PumasiSettingsPage`는 Stardew `GameMenu.pages`에 추가되는 빠른 설정 페이지입니다. 바닐라 `GameMenu.getTabNumberFromName`은 기본 탭 이름만 알기 때문에, Pumasi는 커스텀 탭을 `GameMenu.tabs`에 직접 추가하지 않습니다. 대신 `RenderedActiveMenu`에서 `P` 탭을 그리고, SMAPI 입력 이벤트에서 해당 탭 클릭을 감지해 `currentTab`을 Pumasi 페이지 인덱스로 바꿉니다.
 
 설정 항목 순서는 `Pumasi.Core.Ui.PumasiSettingsCatalog`가 소유하며, `PumasiSettingsCatalogTests`가 항목 순서와 라벨 존재를 검증합니다.
+
+언어 설정은 `UiConfig.Language`에 저장됩니다. Pumasi 자체 UI 문구는 `Pumasi.Core.Ui.PumasiText`를 통해 한국어/영어를 선택하고, 설정 행 라벨은 `PumasiSettingsCatalog`가 같은 언어 설정을 사용해 포매팅합니다.
 
 ## AI와 위키 흐름
 

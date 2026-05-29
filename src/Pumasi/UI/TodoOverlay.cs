@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Pumasi.Core.Configuration;
 using Pumasi.Core.Tasks;
 using Pumasi.Core.Ui;
 using Pumasi.Multiplayer;
@@ -41,6 +42,7 @@ internal sealed class TodoOverlay
     }
 
     public bool Expanded { get; private set; }
+    public UiLanguage Language { get; set; } = UiLanguage.Korean;
 
     public bool TryTogglePopupClick(int x, int y)
     {
@@ -95,14 +97,16 @@ internal sealed class TodoOverlay
 
         if (visibleItems.Length == 0)
         {
-            DrawShadowedText(spriteBatch, "Todo: idle", position, BodyText);
+            DrawShadowedText(spriteBatch, PumasiText.Get(Language, PumasiTextKey.TodoIdle), position, BodyText);
             return;
         }
 
         for (var i = 0; i < visibleItems.Length; i++)
         {
             var item = visibleItems[i];
-            var text = $"#{i + 1} [{item.Status}] {item.Type} {item.Location}({item.X},{item.Y})";
+            var localizedStatus = PumasiText.GetTaskStatus(Language, item.Status);
+            var type = PumasiText.GetTaskType(Language, item.Type);
+            var text = $"#{i + 1} [{localizedStatus}] {type} {item.Location}({item.X},{item.Y})";
             DrawShadowedText(spriteBatch, TrimToWidth(text, textWidth), position, BodyText);
             DrawReorderControls(spriteBatch, reorderControls.Where(control => control.FromPosition == i + 1));
             position.Y += lineHeight;

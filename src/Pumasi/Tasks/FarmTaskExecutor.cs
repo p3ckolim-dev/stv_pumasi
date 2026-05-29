@@ -11,10 +11,12 @@ namespace Pumasi.Tasks;
 internal sealed class FarmTaskExecutor
 {
     private readonly HelperRuntimeState helperState;
+    private readonly Func<TaskType, string> formatTaskType;
 
-    public FarmTaskExecutor(HelperRuntimeState helperState)
+    public FarmTaskExecutor(HelperRuntimeState helperState, Func<TaskType, string>? formatTaskType = null)
     {
         this.helperState = helperState;
+        this.formatTaskType = formatTaskType ?? (type => type.ToString());
     }
 
     public TaskExecutionResult Execute(HelperTask task)
@@ -26,7 +28,7 @@ internal sealed class FarmTaskExecutor
         helperState.Location = location.NameOrUniqueName;
         helperState.X = task.Target.X;
         helperState.Y = task.Target.Y;
-        helperState.Status = task.Type.ToString();
+        helperState.Status = formatTaskType(task.Type);
         helperState.CurrentTaskKey = task.Key;
 
         return task.Type switch

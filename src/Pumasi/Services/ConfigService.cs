@@ -1,4 +1,5 @@
 using Pumasi.Core.Configuration;
+using Pumasi.Core.Ui;
 using Pumasi.Integrations;
 using StardewModdingAPI;
 
@@ -6,6 +7,8 @@ namespace Pumasi.Services;
 
 internal sealed class ConfigService
 {
+    private static readonly string[] LanguageAllowedValues = { nameof(UiLanguage.Korean), nameof(UiLanguage.English) };
+
     private readonly IModHelper helper;
     private readonly IMonitor monitor;
     private readonly IManifest manifest;
@@ -47,23 +50,32 @@ internal sealed class ConfigService
         }
 
         api.Register(manifest, Reset, Save);
-        api.AddSectionTitle(manifest, () => "Helper");
-        api.AddTextOption(manifest, () => Config.Assistant.Name, value => Config.Assistant.Name = value, () => "Name");
-        api.AddTextOption(manifest, () => Config.Assistant.Personality, value => Config.Assistant.Personality = value, () => "Personality");
-        api.AddTextOption(manifest, () => Config.Assistant.BehaviorRules, value => Config.Assistant.BehaviorRules = value, () => "Behavior rules");
-        api.AddNumberOption(manifest, () => Config.Assistant.MaxTasksPerDay, value => Config.Assistant.MaxTasksPerDay = value, () => "Max tasks per day", min: 1, max: 500);
-        api.AddNumberOption(manifest, () => Config.Assistant.MorningTodoLimit, value => Config.Assistant.MorningTodoLimit = value, () => "Morning todos", min: 0, max: 20);
+        api.AddSectionTitle(manifest, () => T(PumasiTextKey.GmcmUiSection));
+        api.AddTextOption(
+            manifest,
+            () => Config.Ui.Language.ToString(),
+            value => Config.Ui.Language = ParseLanguage(value),
+            () => T(PumasiTextKey.SettingsLanguage),
+            allowedValues: LanguageAllowedValues,
+            formatAllowedValue: value => PumasiText.GetLanguageName(Config.Ui.Language, ParseLanguage(value)));
 
-        api.AddSectionTitle(manifest, () => "Work Categories");
-        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Crops, value => Config.Assistant.WorkCategories.Crops = value, () => "Crops");
-        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Machines, value => Config.Assistant.WorkCategories.Machines = value, () => "Machines");
-        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Animals, value => Config.Assistant.WorkCategories.Animals = value, () => "Animals");
-        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Chests, value => Config.Assistant.WorkCategories.Chests = value, () => "Chests");
-        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Planting, value => Config.Assistant.WorkCategories.Planting = value, () => "Planting");
+        api.AddSectionTitle(manifest, () => T(PumasiTextKey.GmcmHelperSection));
+        api.AddTextOption(manifest, () => Config.Assistant.Name, value => Config.Assistant.Name = value, () => T(PumasiTextKey.GmcmName));
+        api.AddTextOption(manifest, () => Config.Assistant.Personality, value => Config.Assistant.Personality = value, () => T(PumasiTextKey.GmcmPersonality));
+        api.AddTextOption(manifest, () => Config.Assistant.BehaviorRules, value => Config.Assistant.BehaviorRules = value, () => T(PumasiTextKey.GmcmBehaviorRules));
+        api.AddNumberOption(manifest, () => Config.Assistant.MaxTasksPerDay, value => Config.Assistant.MaxTasksPerDay = value, () => T(PumasiTextKey.GmcmMaxTasksPerDay), min: 1, max: 500);
+        api.AddNumberOption(manifest, () => Config.Assistant.MorningTodoLimit, value => Config.Assistant.MorningTodoLimit = value, () => T(PumasiTextKey.GmcmMorningTodos), min: 0, max: 20);
 
-        api.AddSectionTitle(manifest, () => "Gemini");
-        api.AddTextOption(manifest, () => Config.Gemini.BaseUrl, value => Config.Gemini.BaseUrl = value, () => "Base URL");
-        api.AddTextOption(manifest, () => Config.Gemini.Model, value => Config.Gemini.Model = value, () => "Model");
+        api.AddSectionTitle(manifest, () => T(PumasiTextKey.GmcmWorkCategoriesSection));
+        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Crops, value => Config.Assistant.WorkCategories.Crops = value, () => T(PumasiTextKey.GmcmCrops));
+        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Machines, value => Config.Assistant.WorkCategories.Machines = value, () => T(PumasiTextKey.GmcmMachines));
+        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Animals, value => Config.Assistant.WorkCategories.Animals = value, () => T(PumasiTextKey.GmcmAnimals));
+        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Chests, value => Config.Assistant.WorkCategories.Chests = value, () => T(PumasiTextKey.GmcmChests));
+        api.AddBoolOption(manifest, () => Config.Assistant.WorkCategories.Planting, value => Config.Assistant.WorkCategories.Planting = value, () => T(PumasiTextKey.GmcmPlanting));
+
+        api.AddSectionTitle(manifest, () => T(PumasiTextKey.GmcmGeminiSection));
+        api.AddTextOption(manifest, () => Config.Gemini.BaseUrl, value => Config.Gemini.BaseUrl = value, () => T(PumasiTextKey.GmcmBaseUrl));
+        api.AddTextOption(manifest, () => Config.Gemini.Model, value => Config.Gemini.Model = value, () => T(PumasiTextKey.GmcmModel));
         api.AddTextOption(
             manifest,
             () => string.IsNullOrWhiteSpace(Config.Gemini.ApiKey) ? "" : "********",
@@ -72,15 +84,22 @@ internal sealed class ConfigService
                 if (!string.IsNullOrWhiteSpace(value) && value != "********")
                     Config.Gemini.ApiKey = value.Trim();
             },
-            () => "Gemini API key",
-            () => "Stored only in this host's local config. Enter a new key to replace the existing one.");
-        api.AddNumberOption(manifest, () => Config.Gemini.MaxCallsPerDay, value => Config.Gemini.MaxCallsPerDay = value, () => "Max calls per day", min: 0, max: 500);
+            () => T(PumasiTextKey.GmcmGeminiApiKey),
+            () => T(PumasiTextKey.GmcmGeminiApiKeyTooltip));
+        api.AddNumberOption(manifest, () => Config.Gemini.MaxCallsPerDay, value => Config.Gemini.MaxCallsPerDay = value, () => T(PumasiTextKey.GmcmMaxCallsPerDay), min: 0, max: 500);
 
-        api.AddSectionTitle(manifest, () => "Wiki Answers");
-        api.AddBoolOption(manifest, () => Config.WikiAnswers.WikiAnswersEnabled, value => Config.WikiAnswers.WikiAnswersEnabled = value, () => "Use Korean Wiki answers");
-        api.AddTextOption(manifest, () => Config.WikiAnswers.WikiBaseUrl, value => Config.WikiAnswers.WikiBaseUrl = value, () => "Wiki base URL");
-        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiMaxPages, value => Config.WikiAnswers.WikiMaxPages = value, () => "Max wiki pages", min: 1, max: 5);
-        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiContextCharacterLimit, value => Config.WikiAnswers.WikiContextCharacterLimit = value, () => "Wiki context character limit", min: 1000, max: 20000);
-        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiQuestionCooldownSeconds, value => Config.WikiAnswers.WikiQuestionCooldownSeconds = value, () => "Wiki question cooldown seconds", min: 0, max: 120);
+        api.AddSectionTitle(manifest, () => T(PumasiTextKey.GmcmWikiAnswersSection));
+        api.AddBoolOption(manifest, () => Config.WikiAnswers.WikiAnswersEnabled, value => Config.WikiAnswers.WikiAnswersEnabled = value, () => T(PumasiTextKey.GmcmUseKoreanWikiAnswers));
+        api.AddTextOption(manifest, () => Config.WikiAnswers.WikiBaseUrl, value => Config.WikiAnswers.WikiBaseUrl = value, () => T(PumasiTextKey.GmcmWikiBaseUrl));
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiMaxPages, value => Config.WikiAnswers.WikiMaxPages = value, () => T(PumasiTextKey.GmcmMaxWikiPages), min: 1, max: 5);
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiContextCharacterLimit, value => Config.WikiAnswers.WikiContextCharacterLimit = value, () => T(PumasiTextKey.GmcmWikiContextCharacterLimit), min: 1000, max: 20000);
+        api.AddNumberOption(manifest, () => Config.WikiAnswers.WikiQuestionCooldownSeconds, value => Config.WikiAnswers.WikiQuestionCooldownSeconds = value, () => T(PumasiTextKey.GmcmWikiQuestionCooldownSeconds), min: 0, max: 120);
+    }
+
+    private string T(PumasiTextKey key) => PumasiText.Get(Config.Ui.Language, key);
+
+    private static UiLanguage ParseLanguage(string value)
+    {
+        return Enum.TryParse<UiLanguage>(value, ignoreCase: true, out var language) ? language : UiLanguage.Korean;
     }
 }

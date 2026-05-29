@@ -13,6 +13,7 @@ public sealed class ConfigRedactionTests
 
         Assert.Equal("Pumasi", config.Assistant.Name);
         Assert.Equal(3, config.Assistant.MorningTodoLimit);
+        Assert.Equal(UiLanguage.Korean, config.Ui.Language);
     }
 
     [Fact]

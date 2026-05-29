@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.15`
+Current mod version: `0.1.16`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.15.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.16.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -123,6 +123,8 @@ Todo execution is top-to-bottom by visible queue order. Morning farm scans enque
 `PumasiSettingsPage` is a quick settings page appended to Stardew `GameMenu.pages`. Vanilla `GameMenu.getTabNumberFromName` only knows vanilla tab names, so Pumasi does not directly add a custom tab to `GameMenu.tabs`. Instead, it draws a `P` tab in `RenderedActiveMenu` and detects clicks through the SMAPI input event, then switches `currentTab` to the Pumasi page index.
 
 The setting order is owned by `Pumasi.Core.Ui.PumasiSettingsCatalog`, and `PumasiSettingsCatalogTests` verifies the row order and labels.
+
+The language setting is stored in `UiConfig.Language`. Pumasi-owned UI text is selected through `Pumasi.Core.Ui.PumasiText`, and settings row labels are formatted by `PumasiSettingsCatalog` using the same language setting.
 
 ## AI And Wiki Flow
 

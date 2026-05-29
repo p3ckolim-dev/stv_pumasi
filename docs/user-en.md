@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.15`
+Current mod version: `0.1.16`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.15` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.16` among loaded mods.
 
 ## Updating
 
@@ -116,12 +116,15 @@ Open the ESC/game menu and select the `P` Pumasi tab added to the right side of 
 
 The current Pumasi tab can toggle:
 
+- Language: Korean / English.
 - Todo HUD icon visibility.
 - Helper notification visibility.
 - Crop, machine, animal, chest, and planting work categories.
 - Korean Wiki answer support.
 
-Changes are saved immediately to `Mods/Pumasi/config.json`. In multiplayer, guests can change local UI settings only. Host-authoritative settings like work categories and wiki answers must be changed by the host to affect execution.
+The language setting applies to Pumasi-owned UI text such as the settings page, todo board, chat command feedback, HUD notifications, and GMCM setting names. Gemini-generated answers and raw wiki-derived content may still appear in the language produced by the model/wiki.
+
+Changes are saved immediately to `Mods/Pumasi/config.json`. In multiplayer, guests can change language and local UI settings only. Host-authoritative settings like work categories and wiki answers must be changed by the host to affect execution.
 
 Text settings like helper name, behavior rules, and Gemini API key still use Generic Mod Config Menu, `config.json`, or the SMAPI console `pms_key` command in this version.
 

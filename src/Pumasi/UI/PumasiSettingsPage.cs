@@ -15,6 +15,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     private static readonly Color CheckboxFill = new(242, 180, 91);
     private static readonly Color CheckboxEnabledFill = new(76, 181, 63);
     private static readonly Color CheckboxDisabledFill = new(132, 105, 75);
+    private static readonly Color LanguageChipFill = new(63, 142, 184);
 
     private readonly ModConfig config;
     private readonly Func<bool> canEditHostSettings;
@@ -77,8 +78,12 @@ internal sealed class PumasiSettingsPage : IClickableMenu
             var enabled = GetValue(row.Key);
             var editable = CanEdit(row.Key);
 
-            DrawCheckbox(b, checkboxBounds, enabled, editable);
-            DrawRowLabel(b, row, new Vector2(layout.RowLabelX, rowY + 6), layout.RowLabelMaxWidth, editable);
+            if (row.Key == PumasiSettingsKey.Language)
+                DrawLanguageChip(b, checkboxBounds, config.Ui.Language);
+            else
+                DrawCheckbox(b, checkboxBounds, enabled, editable);
+
+            DrawRowLabel(b, row, config.Ui.Language, new Vector2(layout.RowLabelX, rowY + 6), layout.RowLabelMaxWidth, editable);
             rowHitAreas.Add(new RowHitArea(row, rowBounds));
         }
 
@@ -87,10 +92,10 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     private void DrawTitle(SpriteBatch b, PumasiSettingsPageLayout layout)
     {
-        var title = "Pumasi Settings";
+        var title = PumasiText.Get(config.Ui.Language, PumasiTextKey.SettingsTitle);
         var subtitle = canEditHostSettings()
-            ? "품앗이 빠른 설정"
-            : "게스트는 로컬 UI 설정만 변경할 수 있어요";
+            ? PumasiText.Get(config.Ui.Language, PumasiTextKey.SettingsHostSubtitle)
+            : PumasiText.Get(config.Ui.Language, PumasiTextKey.SettingsGuestSubtitle);
         var titlePosition = new Vector2(layout.ContentX, layout.TitleY);
         var subtitlePosition = new Vector2(layout.ContentX, layout.SubtitleY);
 
@@ -102,7 +107,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     private void DrawFooter(SpriteBatch b, PumasiSettingsPageLayout layout)
     {
-        var text = "이름/규칙/API 키: GMCM 또는 SMAPI 콘솔 pms_key";
+        var text = PumasiText.Get(config.Ui.Language, PumasiTextKey.SettingsFooter);
         var position = new Vector2(layout.ContentX, layout.FooterY);
         var clipped = TrimToWidth(text, layout.FooterMaxWidth);
         b.DrawString(Game1.smallFont, clipped, position + new Vector2(1, 1), Color.White * 0.45f);
@@ -130,10 +135,27 @@ internal sealed class PumasiSettingsPage : IClickableMenu
         b.DrawString(Game1.smallFont, mark, markPosition, Color.White);
     }
 
-    private static void DrawRowLabel(SpriteBatch b, PumasiSettingsRow row, Vector2 position, int maxWidth, bool editable)
+    private static void DrawLanguageChip(SpriteBatch b, Rectangle bounds, UiLanguage language)
+    {
+        DrawRectangle(b, bounds, CheckboxBorder);
+        DrawRectangle(b, new Rectangle(bounds.X + 4, bounds.Y + 4, bounds.Width - 8, bounds.Height - 8), LanguageChipFill);
+
+        var mark = language == UiLanguage.English ? "EN" : "KO";
+        var markSize = Game1.tinyFont.MeasureString(mark);
+        var markPosition = new Vector2(
+            bounds.X + (bounds.Width - markSize.X) / 2f,
+            bounds.Y + (bounds.Height - markSize.Y) / 2f);
+        b.DrawString(Game1.tinyFont, mark, markPosition + new Vector2(1, 1), Color.Black * 0.35f);
+        b.DrawString(Game1.tinyFont, mark, markPosition, Color.White);
+    }
+
+    private static void DrawRowLabel(SpriteBatch b, PumasiSettingsRow row, UiLanguage language, Vector2 position, int maxWidth, bool editable)
     {
         var color = editable ? TextColor : MutedTextColor;
-        var label = TrimToWidth(row.KoreanLabel, maxWidth);
+        var label = row.Key == PumasiSettingsKey.Language
+            ? $"{row.FormatLabel(language)}: {PumasiText.GetLanguageName(language, language)}"
+            : row.FormatLabel(language);
+        label = TrimToWidth(label, maxWidth);
         b.DrawString(Game1.smallFont, label, position + new Vector2(1, 1), Color.White * 0.4f);
         b.DrawString(Game1.smallFont, label, position, color);
     }
@@ -142,6 +164,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     {
         return key switch
         {
+            PumasiSettingsKey.Language => config.Ui.Language == UiLanguage.Korean,
             PumasiSettingsKey.ShowTodoOverlay => config.Ui.ShowTodoOverlay,
             PumasiSettingsKey.ShowHelperStatusNotifications => config.Ui.ShowHelperStatusNotifications,
             PumasiSettingsKey.WorkCrops => config.Assistant.WorkCategories.Crops,
@@ -158,6 +181,10 @@ internal sealed class PumasiSettingsPage : IClickableMenu
     {
         switch (key)
         {
+            case PumasiSettingsKey.Language:
+                config.Ui.Language = config.Ui.Language == UiLanguage.English ? UiLanguage.Korean : UiLanguage.English;
+                break;
+
             case PumasiSettingsKey.ShowTodoOverlay:
                 config.Ui.ShowTodoOverlay = !config.Ui.ShowTodoOverlay;
                 break;
@@ -194,7 +221,7 @@ internal sealed class PumasiSettingsPage : IClickableMenu
 
     private bool CanEdit(PumasiSettingsKey key)
     {
-        if (key is PumasiSettingsKey.ShowTodoOverlay or PumasiSettingsKey.ShowHelperStatusNotifications)
+        if (key is PumasiSettingsKey.Language or PumasiSettingsKey.ShowTodoOverlay or PumasiSettingsKey.ShowHelperStatusNotifications)
             return true;
 
         return canEditHostSettings();

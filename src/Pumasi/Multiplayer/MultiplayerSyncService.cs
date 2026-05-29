@@ -15,18 +15,21 @@ internal sealed class MultiplayerSyncService
     private readonly IMonitor monitor;
     private readonly IManifest manifest;
     private readonly Action<string, long> handleGuestCommand;
+    private readonly Func<UiLanguage> getLanguage;
     private TodoSnapshot latestSnapshot = new(Array.Empty<TodoItemSnapshot>());
 
     public MultiplayerSyncService(
         IModHelper helper,
         IMonitor monitor,
         IManifest manifest,
-        Action<string, long> handleGuestCommand)
+        Action<string, long> handleGuestCommand,
+        Func<UiLanguage> getLanguage)
     {
         this.helper = helper;
         this.monitor = monitor;
         this.manifest = manifest;
         this.handleGuestCommand = handleGuestCommand;
+        this.getLanguage = getLanguage;
         helper.Events.Multiplayer.ModMessageReceived += OnModMessageReceived;
     }
 
@@ -124,7 +127,7 @@ internal sealed class MultiplayerSyncService
     private void PostHelperAnswerToChat(HelperAnswerMessage answer)
     {
         var helperName = LatestHelperState?.Name ?? "pumasi";
-        foreach (var line in HelperChatFormatter.FormatAnswer(helperName, answer.Answer, answer.Sources))
+        foreach (var line in HelperChatFormatter.FormatAnswer(helperName, answer.Answer, answer.Sources, getLanguage()))
             Game1.chatBox?.addMessage(line, Color.LightGreen);
     }
 }

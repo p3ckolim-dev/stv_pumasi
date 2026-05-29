@@ -1,7 +1,10 @@
+using Pumasi.Core.Configuration;
+
 namespace Pumasi.Core.Ui;
 
 public enum PumasiSettingsKey
 {
+    Language,
     ShowTodoOverlay,
     ShowHelperStatusNotifications,
     WorkCrops,
@@ -15,7 +18,13 @@ public enum PumasiSettingsKey
 public sealed record PumasiSettingsRow(
     PumasiSettingsKey Key,
     string EnglishLabel,
-    string KoreanLabel);
+    string KoreanLabel)
+{
+    public string FormatLabel(UiLanguage language)
+    {
+        return language == UiLanguage.English ? EnglishLabel : KoreanLabel;
+    }
+}
 
 public static class PumasiSettingsCatalog
 {
@@ -23,6 +32,7 @@ public static class PumasiSettingsCatalog
     {
         return new[]
         {
+            new PumasiSettingsRow(PumasiSettingsKey.Language, "Language", "언어"),
             new PumasiSettingsRow(PumasiSettingsKey.ShowTodoOverlay, "Show todo HUD icon", "투두 HUD 아이콘 표시"),
             new PumasiSettingsRow(PumasiSettingsKey.ShowHelperStatusNotifications, "Show helper notifications", "도우미 알림 표시"),
             new PumasiSettingsRow(PumasiSettingsKey.WorkCrops, "Crop work", "작물 작업"),

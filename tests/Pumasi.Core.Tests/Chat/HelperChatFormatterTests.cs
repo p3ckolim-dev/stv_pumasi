@@ -1,4 +1,5 @@
 using Pumasi.Core.Chat;
+using Pumasi.Core.Configuration;
 using Xunit;
 
 namespace Pumasi.Core.Tests.Chat;
@@ -31,6 +32,20 @@ public sealed class HelperChatFormatterTests
         Assert.Equal(2, lines.Count);
         Assert.Equal("품앗이: 딸기 씨앗은 축제에서 살 수 있어요.", lines[0]);
         Assert.Equal("출처: 딸기 - https://ko.stardewvalleywiki.com/딸기, 달걀 축제 - https://ko.stardewvalleywiki.com/달걀_축제, 봄 - https://ko.stardewvalleywiki.com/봄 외 1개", lines[1]);
+    }
+
+    [Fact]
+    public void FormatAnswer_UsesEnglishSourceLineWhenSelected()
+    {
+        var lines = HelperChatFormatter.FormatAnswer(
+            "Pumasi",
+            "Strawberry seeds are sold at the Egg Festival.",
+            new[] { "Strawberry", "Egg Festival", "Spring", "Pierre" },
+            UiLanguage.English);
+
+        Assert.Equal(2, lines.Count);
+        Assert.Equal("Pumasi: Strawberry seeds are sold at the Egg Festival.", lines[0]);
+        Assert.Equal("Sources: Strawberry, Egg Festival, Spring and 1 more", lines[1]);
     }
 
     [Fact]
