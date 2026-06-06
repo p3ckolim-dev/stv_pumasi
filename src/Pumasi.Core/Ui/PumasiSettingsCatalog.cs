@@ -73,8 +73,8 @@ public static class PumasiSettingsCatalog
                 PumasiSettingsKey.WorkAnimals,
                 "Animal work",
                 "동물 작업",
-                "Refill hay in animal buildings.",
-                "동물 건물의 건초를 리필해요."),
+                "Refill hay, pet animals, and collect loose animal products.",
+                "건초 리필, 동물 쓰다듬기, 바닥 생산품 수거."),
             new PumasiSettingsRow(
                 PumasiSettingsKey.WorkChests,
                 "Chest work",

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Pumasi.Core.Configuration;
 using Pumasi.Core.Tasks;
@@ -9,6 +10,26 @@ namespace Pumasi.Game;
 
 internal sealed class FarmTaskScanner
 {
+    private static readonly HashSet<string> LooseAnimalProductItemIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "107", // Dinosaur Egg
+        "174", // Large Egg
+        "176", // Egg
+        "180", // Brown Egg
+        "182", // Large Brown Egg
+        "184", // Milk
+        "186", // Large Milk
+        "289", // Ostrich Egg
+        "305", // Void Egg
+        "436", // Goat Milk
+        "438", // Large Goat Milk
+        "440", // Wool
+        "442", // Duck Egg
+        "444", // Duck Feather
+        "446", // Rabbit's Foot
+        "928" // Golden Egg
+    };
+
     public IReadOnlyList<TaskProposal> Scan(ModConfig config)
     {
         var proposals = new List<TaskProposal>();
@@ -25,7 +46,7 @@ internal sealed class FarmTaskScanner
         }
 
         if (config.Assistant.WorkCategories.Animals)
-            ScanHayRefills(proposals);
+            ScanAnimalWork(proposals);
 
         return proposals
             .OrderByDescending(task => task.Priority)
@@ -113,6 +134,59 @@ internal sealed class FarmTaskScanner
         }
     }
 
+    private static void ScanAnimalWork(List<TaskProposal> proposals)
+    {
+        foreach (var location in Game1.locations.Where(IsAnimalHouse))
+        {
+            ScanAnimalPetting(location, proposals);
+            ScanLooseAnimalProducts(location, proposals);
+        }
+
+        ScanHayRefills(proposals);
+    }
+
+    private static void ScanAnimalPetting(GameLocation location, List<TaskProposal> proposals)
+    {
+        if (location is not AnimalHouse animalHouse)
+            return;
+
+        foreach (var animal in GetAnimalsForHouse(animalHouse))
+        {
+            if (animal.wasPet.Value)
+                continue;
+
+            var tile = animal.TilePoint;
+            proposals.Add(new TaskProposal(
+                TaskType.PetAnimal,
+                new TaskTarget(
+                    location.NameOrUniqueName,
+                    tile.X,
+                    tile.Y,
+                    EntityId: animal.myID.Value.ToString(CultureInfo.InvariantCulture),
+                    ObjectName: animal.displayName),
+                72,
+                "Unpetted animal",
+                "scan"));
+        }
+    }
+
+    private static void ScanLooseAnimalProducts(GameLocation location, List<TaskProposal> proposals)
+    {
+        foreach (var pair in location.objects.Pairs)
+        {
+            if (pair.Value is not SObject obj || !IsSafeLooseAnimalProduct(obj))
+                continue;
+
+            var tile = pair.Key;
+            proposals.Add(new TaskProposal(
+                TaskType.CollectAnimalProduct,
+                new TaskTarget(location.NameOrUniqueName, (int)tile.X, (int)tile.Y, ObjectName: obj.DisplayName),
+                82,
+                $"Loose animal product {obj.DisplayName}",
+                "scan"));
+        }
+    }
+
     private static void ScanHayRefills(List<TaskProposal> proposals)
     {
         foreach (var location in Game1.locations.Where(IsAnimalHouse))
@@ -160,7 +234,24 @@ internal sealed class FarmTaskScanner
 
     private static bool IsAnimalHouse(GameLocation location)
     {
-        return string.Equals(location.GetType().Name, "AnimalHouse", StringComparison.Ordinal);
+        return AnimalTaskSafety.IsAnimalHouseTypeName(location.GetType().Name);
+    }
+
+    private static bool IsSafeLooseAnimalProduct(SObject obj)
+    {
+        return obj.CanBeGrabbed
+            && !obj.bigCraftable.Value
+            && LooseAnimalProductItemIds.Contains(obj.ItemId);
+    }
+
+    private static IEnumerable<FarmAnimal> GetAnimalsForHouse(AnimalHouse animalHouse)
+    {
+        var farm = Game1.getFarm();
+        foreach (var animalId in animalHouse.animalsThatLiveHere)
+        {
+            if (farm.animals.TryGetValue(animalId, out var animal))
+                yield return animal;
+        }
     }
 
     private static bool IsReadyToHarvest(HoeDirt dirt)

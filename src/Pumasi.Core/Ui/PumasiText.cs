@@ -199,7 +199,19 @@ public static class PumasiText
         ["tilled-sprinkler-soil"] = new("스프링클러 주변 땅을 팠어요", "Tilled sprinkler soil"),
         ["not-an-animal-house"] = new("동물 건물이 아니에요", "Not an animal building"),
         ["hay-refill-method-not-found"] = new("건초 리필 방법을 찾지 못했어요", "Hay refill method was not found"),
-        ["refilled-hay"] = new("건초를 리필했어요", "Refilled hay")
+        ["refilled-hay"] = new("건초를 리필했어요", "Refilled hay"),
+        ["animal-id-required"] = new("동물 ID가 없어요", "Animal ID is missing"),
+        ["animal-not-found"] = new("동물을 찾지 못했어요", "Animal was not found"),
+        ["animal-already-petted"] = new("이미 쓰다듬은 동물이에요", "Animal was already petted"),
+        ["animal-pet-method-not-found"] = new("동물 쓰다듬기 방법을 찾지 못했어요", "Animal petting method was not found"),
+        ["animal-pet-failed"] = new("동물 쓰다듬기에 실패했어요", "Animal petting failed"),
+        ["petted-animal"] = new("동물을 쓰다듬었어요", "Petted animal"),
+        ["animal-product-not-found"] = new("동물 생산품을 찾지 못했어요", "Animal product was not found"),
+        ["not-animal-product"] = new("안전한 동물 생산품이 아니에요", "Not a safe animal product"),
+        ["inventory-full"] = new("보관할 공간이 없어요", "No storage space available"),
+        ["animal-product-collection-failed"] = new("동물 생산품 수거에 실패했어요", "Animal product collection failed"),
+        ["stored-animal-product-in-chest"] = new("동물 생산품을 상자에 보관했어요", "Stored animal product in chest"),
+        ["collected-animal-product"] = new("동물 생산품을 인벤토리에 보관했어요", "Stored animal product in inventory")
     };
 
     public static string Get(UiLanguage language, PumasiTextKey key)

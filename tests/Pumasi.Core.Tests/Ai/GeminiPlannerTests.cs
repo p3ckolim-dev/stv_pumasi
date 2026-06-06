@@ -77,4 +77,85 @@ public sealed class GeminiPlannerTests
             task => Assert.Equal(TaskType.TillSprinklerSoil, task.Type),
             task => Assert.Equal(TaskType.RefillHay, task.Type));
     }
+
+    [Fact]
+    public void ParsePlan_ExtractsAnimalTasksWithTargets()
+    {
+        var result = GeminiPlanner.ParsePlan(
+            "{\n" +
+            "  \"message\": \"동물 일을 처리할게요.\",\n" +
+            "  \"tasks\": [\n" +
+            "    {\n" +
+            "      \"type\": \"PetAnimal\",\n" +
+            "      \"location\": \"Barn\",\n" +
+            "      \"tile\": { \"x\": 12, \"y\": 8 },\n" +
+            "      \"entityId\": \"123456789\",\n" +
+            "      \"objectName\": \"Miso\",\n" +
+            "      \"priority\": 72,\n" +
+            "      \"reason\": \"아직 쓰다듬지 않은 동물\",\n" +
+            "      \"source\": \"gemini\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"type\": \"CollectAnimalProduct\",\n" +
+            "      \"location\": \"Coop\",\n" +
+            "      \"tile\": { \"x\": 6, \"y\": 4 },\n" +
+            "      \"objectName\": \"Egg\",\n" +
+            "      \"priority\": 82,\n" +
+            "      \"reason\": \"바닥에 놓인 동물 생산품\",\n" +
+            "      \"source\": \"gemini\"\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}");
+
+        Assert.True(result.Success);
+        Assert.Collection(
+            result.Tasks,
+            task =>
+            {
+                Assert.Equal(TaskType.PetAnimal, task.Type);
+                Assert.Equal("123456789", task.Target.EntityId);
+                Assert.Equal("Miso", task.Target.ObjectName);
+            },
+            task =>
+            {
+                Assert.Equal(TaskType.CollectAnimalProduct, task.Type);
+                Assert.Equal("Egg", task.Target.ObjectName);
+            });
+    }
+
+    [Fact]
+    public void SelectCandidateTasks_RejectsPlannedTasksThatWereNotScanned()
+    {
+        var candidates = new[]
+        {
+            new TaskProposal(
+                TaskType.CollectAnimalProduct,
+                new TaskTarget("Coop", 6, 4, ObjectName: "Egg"),
+                82,
+                "Loose animal product Egg",
+                "scan")
+        };
+        var planned = new[]
+        {
+            new TaskProposal(
+                TaskType.CollectAnimalProduct,
+                new TaskTarget("Coop", 6, 4, ObjectName: "Egg"),
+                100,
+                "Gemini chose the scanned egg",
+                "gemini"),
+            new TaskProposal(
+                TaskType.PetAnimal,
+                new TaskTarget("Barn", 12, 8, EntityId: "123456789", ObjectName: "Miso"),
+                72,
+                "Gemini invented an animal outside candidateTasks",
+                "gemini")
+        };
+
+        var selected = GeminiPlanner.SelectCandidateTasks(planned, candidates);
+
+        var task = Assert.Single(selected);
+        Assert.Equal("CollectAnimalProduct:Coop:6,4:Egg", task.Key);
+        Assert.Equal(100, task.Priority);
+        Assert.Equal("gemini", task.Source);
+    }
 }

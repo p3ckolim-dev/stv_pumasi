@@ -56,6 +56,10 @@ public sealed class PumasiSettingsCatalogTests
         Assert.Contains("물주기", crops.FormatDescription(UiLanguage.Korean));
         Assert.Contains("수확", crops.FormatDescription(UiLanguage.Korean));
         Assert.Contains("건초", animals.FormatDescription(UiLanguage.Korean));
+        Assert.Contains("쓰다듬기", animals.FormatDescription(UiLanguage.Korean));
+        Assert.Contains("생산품", animals.FormatDescription(UiLanguage.Korean));
+        Assert.Contains("pet", animals.FormatDescription(UiLanguage.English), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("product", animals.FormatDescription(UiLanguage.English), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("준비 중", chests.FormatDescription(UiLanguage.Korean));
         Assert.Contains("coming soon", chests.FormatDescription(UiLanguage.English));
     }

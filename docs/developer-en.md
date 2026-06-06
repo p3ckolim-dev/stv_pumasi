@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.21`
+Current mod version: `0.1.22`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.21.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.22.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -138,6 +138,8 @@ Settings page scrolling and scrollbar calculations live in `PumasiSettingsScroll
 - Wiki answer: `AnswerWithWikiAsync`.
 - Ambiguous and casual chat: `ContextualChatResponder` sends recent conversation and current todos to Gemini, then generates a direct natural-language answer without a JSON routing step.
 
+Gemini task planning is candidate-locked. `PlanWithGeminiAsync` scans the current host state, sends those candidate task keys to Gemini, then enqueues only planned tasks whose keys match the scanned candidate set. This code-level check is the safety boundary; the prompt instruction is not trusted by itself.
+
 `ConversationMemory` manages the latest 12 user/helper turns. `ModEntry` reads and writes this data on the host with the `conversation-memory` SMAPI save data key; guests do not make separate Gemini calls or persist their own conversation context.
 
 Wiki answers use:
@@ -187,6 +189,8 @@ Implemented execution:
 - Collect ready machines.
 - Till plain ground around sprinklers.
 - Refill hay in animal buildings.
+- Pet unpetted animals in loaded animal buildings.
+- Collect loose animal products in loaded animal buildings.
 
 Scanner scope:
 
@@ -194,11 +198,17 @@ Scanner scope:
 - Greenhouse.
 - Untilled plain ground around sprinklers.
 - Hay refill candidates in loaded animal buildings when the `Animals` work category is enabled.
+- Unpetted animal candidates in loaded animal buildings when the `Animals` work category is enabled.
+- Loose animal-product candidates in loaded animal buildings when the `Animals` work category is enabled.
+
+Animal product storage is intentionally conservative. `CollectAnimalProduct` first looks for a normal loaded chest that already contains the same qualified item ID and quality, and only stores there if the chest can accept the full stack. If no matching chest can accept it, the item goes to the host inventory. If the host inventory cannot accept it either, the world object remains in place and the task is skipped. This is not general chest sorting and must not use arbitrary empty chests.
+
+Reward and XP behavior is host-owned. Pumasi is not a real multiplayer farmhand, so code should not manually call XP APIs or split rewards among guests. If a vanilla interaction grants side effects, they belong to `Game1.player` on the host execution path.
 
 Not yet implemented:
 
 - Full NPC schedule, friendship, gifts, events, or social behavior.
-- Planting, selling, destroying, rare item movement, detailed animal care like petting/product collection, chest management.
+- Planting, selling, destroying, rare item movement, tool-required animal products like milking/shearing, general chest management.
 - Durable persistent todo storage beyond current runtime snapshots.
 - Permission UI for individual multiplayer guests.
 

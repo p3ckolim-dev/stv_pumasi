@@ -37,4 +37,15 @@ public sealed class PumasiTextTests
         Assert.Equal("대기", PumasiText.GetTaskStatus(UiLanguage.Korean, HelperTaskStatus.Queued));
         Assert.Equal("Queued", PumasiText.GetTaskStatus(UiLanguage.English, HelperTaskStatus.Queued));
     }
+
+    [Fact]
+    public void GetExecutionReason_ReturnsLocalizedAnimalReasons()
+    {
+        Assert.Equal("동물을 쓰다듬었어요", PumasiText.GetExecutionReason(UiLanguage.Korean, "petted-animal"));
+        Assert.Equal("Petted animal", PumasiText.GetExecutionReason(UiLanguage.English, "petted-animal"));
+        Assert.Equal("동물 생산품을 상자에 보관했어요", PumasiText.GetExecutionReason(UiLanguage.Korean, "stored-animal-product-in-chest"));
+        Assert.Equal("Stored animal product in chest", PumasiText.GetExecutionReason(UiLanguage.English, "stored-animal-product-in-chest"));
+        Assert.Equal("동물 생산품을 인벤토리에 보관했어요", PumasiText.GetExecutionReason(UiLanguage.Korean, "collected-animal-product"));
+        Assert.Equal("Stored animal product in inventory", PumasiText.GetExecutionReason(UiLanguage.English, "collected-animal-product"));
+    }
 }

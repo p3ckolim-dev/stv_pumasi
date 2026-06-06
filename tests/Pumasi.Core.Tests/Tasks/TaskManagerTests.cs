@@ -17,6 +17,16 @@ public sealed class TaskManagerTests
     }
 
     [Fact]
+    public void CreateTaskKey_IncludesAnimalEntityId()
+    {
+        var key = TaskKeyFactory.Create(
+            TaskType.PetAnimal,
+            new TaskTarget("Barn", 12, 8, EntityId: "123456789"));
+
+        Assert.Equal("PetAnimal:Barn:12,8:123456789", key);
+    }
+
+    [Fact]
     public void Enqueue_RejectsDuplicateQueuedTask()
     {
         var manager = new TaskManager(new FixedClock());

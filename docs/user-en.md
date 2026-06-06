@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 `pumasi` (`pms`, Korean name: `품앗이`) is a SMAPI mod prototype for Stardew Valley. It adds a helper that can answer questions, maintain a todo list, and perform a limited set of safe repetitive farm chores.
 
-Current mod version: `0.1.21`
+Current mod version: `0.1.22`
 
 ## Who This Page Is For
 
@@ -42,7 +42,7 @@ Linux:   ~/.local/share/Steam/steamapps/common/Stardew Valley/Mods
 
 SMAPI also prints the exact `Mods go here:` path when it starts. Use that path if it differs from the examples above.
 
-After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.21` among loaded mods.
+After installation, start the game through SMAPI. The SMAPI console should list `pumasi 0.1.22` among loaded mods.
 
 ## Updating
 
@@ -126,7 +126,7 @@ Each settings row also shows a short description of what the current implementat
 
 - Crop work: water dry crops, harvest ready crops, and till plain ground around sprinklers.
 - Machine work: collect ready machine output.
-- Animal work: refill hay in animal buildings.
+- Animal work: refill hay, pet animals, and collect loose animal products.
 - Chest work: coming soon.
 - Planting work: coming soon.
 
@@ -177,6 +177,7 @@ Guest requests are sent to the host. Guests do not need a Gemini API key. The fi
 `pms_ask` and `/pms` still separate clear farm-work requests from clear Stardew Valley information questions. Other casual or ambiguous messages now go straight to Gemini for a natural contextual answer instead of a JSON routing step.
 
 - Farm-work requests use Gemini for task planning.
+- Gemini can only enqueue work that matches the host's current scanned safe task candidates.
 - Stardew Valley information questions search the Korean Stardew Valley Wiki, then Gemini answers only from that retrieved context.
 - Natural-language questions are normalized into focused search candidates first. For example, `딸기 씨앗은 어디서 사?` is retried as `딸기 씨앗`.
 - Questions about Pumasi itself, greetings, thanks, short reactions, and context-dependent inputs use recent conversation and current todos for a direct chat answer.
@@ -228,6 +229,8 @@ The current scanner supports:
 - Ready machines on supported locations.
 - Untilled plain ground around sprinklers.
 - Animal building hay refill candidates when the `Animals` work category is enabled.
+- Unpetted animal candidates in loaded animal buildings when the `Animals` work category is enabled.
+- Loose animal-product candidates in loaded animal buildings when the `Animals` work category is enabled.
 
 The current executor supports:
 
@@ -236,6 +239,12 @@ The current executor supports:
 - Collect ready machines.
 - Till plain ground around sprinklers.
 - Refill hay in animal buildings.
+- Pet unpetted animals.
+- Collect loose animal products.
+
+Loose animal-product storage is conservative. Pumasi first looks for a normal loaded chest that already contains the same item and quality, and stores the product there if that chest can accept the full stack. If no matching chest can accept it, the product goes to the host inventory. If the host inventory cannot accept it either, Pumasi leaves the product in place and skips the task.
+
+Pumasi executes as the host, not as a real farmhand. Items and any vanilla-granted side effects belong to the host. Pumasi does not manually grant XP or distribute XP/items to guests in this version.
 
 The helper processes one queued task at a time from the top of the visible todo list, like checking items off in order. User-requested tasks are appended to the bottom of the queue, so they wait behind existing work unless the host reorders them.
 
@@ -269,7 +278,7 @@ pms_work animals on
 Current limitations:
 
 - No full vanilla-style NPC schedule, friendship, gifts, events, or social behavior yet.
-- No planting, selling, destroying, moving rare items, detailed animal care like petting/product collection, or chest management execution yet.
+- No planting, selling, destroying, moving rare items, tool-required animal product collection like milking/shearing, or general chest management execution yet.
 - Some settings exist before their executor exists because the MVP is being built incrementally.
 
 ## Troubleshooting

@@ -66,7 +66,8 @@ public sealed class GeminiPlanner
             "You are the planning layer for pumasi (품앗이), a Stardew Valley farm helper mod.\n" +
             "Return only JSON. Do not include markdown.\n" +
             "Choose from the provided candidateTasks only. Never invent tiles or task types.\n" +
-            "Supported task types include HarvestCrop, WaterCrop, TillSprinklerSoil, CollectMachine, and RefillHay when those tasks appear in candidateTasks.\n" +
+            "The host will reject any task whose key does not match a candidateTasks key.\n" +
+            "Supported task types include HarvestCrop, WaterCrop, TillSprinklerSoil, CollectMachine, RefillHay, PetAnimal, and CollectAnimalProduct when those tasks appear in candidateTasks.\n" +
             "Schema:\n" +
             "{\n" +
             "  \"message\": \"short public helper message\",\n" +
@@ -119,6 +120,22 @@ public sealed class GeminiPlanner
         }
 
         return AiPlanResult.Ok(dto.Message ?? "", tasks);
+    }
+
+    public static IReadOnlyList<TaskProposal> SelectCandidateTasks(
+        IReadOnlyList<TaskProposal> plannedTasks,
+        IReadOnlyList<TaskProposal> candidateTasks)
+    {
+        if (plannedTasks.Count == 0 || candidateTasks.Count == 0)
+            return Array.Empty<TaskProposal>();
+
+        var candidateKeys = candidateTasks
+            .Select(task => task.Key)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return plannedTasks
+            .Where(task => candidateKeys.Contains(task.Key))
+            .ToArray();
     }
 
     private static string? ExtractJsonObject(string value)

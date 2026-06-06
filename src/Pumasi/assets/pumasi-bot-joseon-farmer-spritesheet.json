@@ -1,0 +1,33 @@
+{
+  "name": "pumasi-bot-joseon-farmer",
+  "source": "pumasi-bot-joseon-farmer-spritesheet.png",
+  "gameSheet": "pumasi-bot-joseon-farmer-spritesheet-64.png",
+  "columns": 3,
+  "rows": 4,
+  "sourceFrame": {
+    "width": 418,
+    "height": 314
+  },
+  "gameFrame": {
+    "width": 64,
+    "height": 64
+  },
+  "rowOrder": [
+    "down",
+    "left",
+    "right",
+    "up"
+  ],
+  "columnOrder": [
+    "idle",
+    "walk_1",
+    "walk_2"
+  ],
+  "animations": {
+    "walk_down": [0, 1, 2, 1],
+    "walk_left": [3, 4, 5, 4],
+    "walk_right": [6, 7, 8, 7],
+    "walk_up": [9, 10, 11, 10]
+  },
+  "notes": "Transparent PNG spritesheet. Source sheet uses 418x314 frames; compact game sheet uses 64x64 frames."
+}

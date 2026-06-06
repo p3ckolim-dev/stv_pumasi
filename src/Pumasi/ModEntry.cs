@@ -812,8 +812,13 @@ public sealed class ModEntry : Mod
                 return;
             }
 
+            var candidateBackedTasks = GeminiPlanner.SelectCandidateTasks(plan.Tasks, candidates);
+            var rejected = plan.Tasks.Count - candidateBackedTasks.Count;
+            if (rejected > 0)
+                Monitor.Log($"Rejected {rejected} Gemini-planned task(s) because they were not present in scanned candidateTasks.", LogLevel.Warn);
+
             var accepted = 0;
-            foreach (var proposal in plan.Tasks)
+            foreach (var proposal in candidateBackedTasks)
             {
                 var result = taskManager.Enqueue(proposal);
                 if (result.Accepted)
