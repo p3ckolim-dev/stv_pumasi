@@ -74,20 +74,18 @@ internal sealed class TodoOverlay
         var lineHeight = Game1.smallFont.LineSpacing + 4;
         var maxTodoRows = TodoOverlayLayout.GetVisibleTodoCapacity(lineHeight, Game1.uiViewport.Height);
 
-        var visibleItems = snapshot.Items
-            .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
-            .Take(maxTodoRows)
-            .ToArray();
-        DrawIcon(spriteBatch, iconBounds, visibleItems.Length, Expanded);
+        var activeCount = TodoDisplayFilter.CountActive(snapshot.Items);
+        var visibleItems = TodoDisplayFilter.SelectVisibleItems(snapshot.Items, maxTodoRows).ToArray();
+        DrawIcon(spriteBatch, iconBounds, activeCount, Expanded);
 
         if (!Expanded)
             return;
 
         var panel = TodoOverlayLayout.CreatePopup(visibleItems.Length, lineHeight, Game1.uiViewport.Width, Game1.uiViewport.Height, iconBounds);
         var position = new Vector2(panel.TextX, panel.TextY);
-        var canReorder = Context.IsMainPlayer && visibleItems.Length > 1;
+        var canReorder = Context.IsMainPlayer && activeCount > 1;
         if (canReorder)
-            reorderControls = TodoOverlayLayout.CreateReorderControls(panel, visibleItems.Length, lineHeight);
+            reorderControls = TodoOverlayLayout.CreateReorderControls(panel, activeCount, lineHeight);
         var textWidth = GetTodoTextWidth(panel, reorderControls);
 
         DrawBoard(spriteBatch, panel);
@@ -103,11 +101,10 @@ internal sealed class TodoOverlay
         for (var i = 0; i < visibleItems.Length; i++)
         {
             var item = visibleItems[i];
-            var localizedStatus = PumasiText.GetTaskStatus(Language, item.Status);
-            var type = PumasiText.GetTaskType(Language, item.Type);
-            var text = $"#{i + 1} [{localizedStatus}] {type} {item.Location}({item.X},{item.Y})";
+            var text = TodoDisplayFormatter.FormatRow(Language, i + 1, item);
             DrawShadowedText(spriteBatch, TrimToWidth(text, textWidth), position, BodyText);
-            DrawReorderControls(spriteBatch, reorderControls.Where(control => control.FromPosition == i + 1));
+            if (i < activeCount)
+                DrawReorderControls(spriteBatch, reorderControls.Where(control => control.FromPosition == i + 1));
             position.Y += lineHeight;
         }
     }

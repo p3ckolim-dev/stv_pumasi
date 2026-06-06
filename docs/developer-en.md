@@ -4,7 +4,7 @@ Quick links: [Home](../README.md) | User: [English](user-en.md) / [한국어](us
 
 This page is for developers who want to fork, modify, test, or extend `pumasi`.
 
-Current mod version: `0.1.20`
+Current mod version: `0.1.21`
 
 ## Repository Overview
 
@@ -40,7 +40,7 @@ Use the repository-local .NET command if available:
 The build creates a SMAPI zip:
 
 ```text
-src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.20.zip
+src/Pumasi/bin/Debug/net6.0/Pumasi 0.1.21.zip
 ```
 
 The `.dotnet/` directory is ignored by git, so a local SDK can be installed without committing it.
@@ -77,6 +77,8 @@ SMAPI prints the exact `Mods go here:` path at startup. Prefer that path when te
 - Gemini planning and wiki-grounded answer flows.
 
 `TaskManager` owns the todo queue, preserves explicit visible todo order, supports host-side active todo reordering, and deduplicates active work with task keys.
+
+`Pumasi.Core.Ui.TodoDisplayFormatter` and `TodoDisplayFilter` own shared todo row wording and visibility rules. The board and `/pms todo` both use this Core logic so active rows, recently finished rows, priority, source, target tile, and localized result reasons stay consistent.
 
 `FarmTaskScanner` scans currently supported locations for candidate work.
 

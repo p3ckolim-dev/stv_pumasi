@@ -474,10 +474,10 @@ public sealed class ModEntry : Mod
 
     private void ShowTodoList(string argument, CommandSurface surface)
     {
+        const int maxTodoListRows = 12;
         var snapshot = Context.IsMainPlayer ? taskManager.CreateSnapshot() : multiplayer.LatestSnapshot;
-        var visibleItems = snapshot.Items
-            .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
-            .ToArray();
+        var activeCount = TodoDisplayFilter.CountActive(snapshot.Items);
+        var visibleItems = TodoDisplayFilter.SelectVisibleItems(snapshot.Items, maxTodoListRows).ToArray();
 
         if (!string.IsNullOrWhiteSpace(argument))
         {
@@ -487,11 +487,10 @@ public sealed class ModEntry : Mod
                 return;
             }
 
-            HandleTodoReorder(argument, visibleItems.Length, surface);
+            HandleTodoReorder(argument, activeCount, surface);
             snapshot = taskManager.CreateSnapshot();
-            visibleItems = snapshot.Items
-                .Where(item => item.Status is HelperTaskStatus.Queued or HelperTaskStatus.Claimed or HelperTaskStatus.InProgress)
-                .ToArray();
+            activeCount = TodoDisplayFilter.CountActive(snapshot.Items);
+            visibleItems = TodoDisplayFilter.SelectVisibleItems(snapshot.Items, maxTodoListRows).ToArray();
         }
 
         if (visibleItems.Length == 0)
@@ -502,10 +501,7 @@ public sealed class ModEntry : Mod
 
         for (var i = 0; i < visibleItems.Length; i++)
         {
-            var item = visibleItems[i];
-            var status = PumasiText.GetTaskStatus(Language, item.Status);
-            var type = PumasiText.GetTaskType(Language, item.Type);
-            SendCommandFeedback($"#{i + 1} [{status}] {type} {item.Location}({item.X},{item.Y}) key={item.Key}", surface);
+            SendCommandFeedback(TodoDisplayFormatter.FormatRow(Language, i + 1, visibleItems[i]), surface);
         }
     }
 
@@ -1071,6 +1067,14 @@ public sealed class ModEntry : Mod
         }
 
         taskManager.Start(claimed.Id);
+        helperState.Location = claimed.Target.Location;
+        helperState.X = claimed.Target.X;
+        helperState.Y = claimed.Target.Y;
+        helperState.Status = PumasiText.GetTaskType(Language, claimed.Type);
+        helperState.CurrentTaskKey = claimed.Key;
+        Monitor.Log($"Executing todo {claimed.Key} ({claimed.Type}) at {claimed.Target.Location} {claimed.Target.X},{claimed.Target.Y}", LogLevel.Debug);
+        BroadcastState();
+
         var result = executor.Execute(claimed);
 
         if (result.Completed)
@@ -1080,6 +1084,7 @@ public sealed class ModEntry : Mod
         else
             taskManager.Fail(claimed.Id, result.Reason);
 
+        Monitor.Log($"Todo {claimed.Key} finished: completed={result.Completed}, skipped={result.Skipped}, reason={result.Reason}", LogLevel.Debug);
         helperState.Status = PumasiText.GetExecutionReason(Language, result.Reason);
         helperState.CurrentTaskKey = null;
         BroadcastState();

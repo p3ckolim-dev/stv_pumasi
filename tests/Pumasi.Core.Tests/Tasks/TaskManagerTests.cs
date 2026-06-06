@@ -95,6 +95,23 @@ public sealed class TaskManagerTests
         Assert.Equal("task-not-queued", result.Reason);
     }
 
+    [Fact]
+    public void CreateSnapshot_IncludesTaskSource()
+    {
+        var manager = new TaskManager(new FixedClock());
+        manager.Enqueue(new TaskProposal(
+            TaskType.WaterCrop,
+            new TaskTarget("Farm", 10, 10),
+            50,
+            "dry crop",
+            "scan"));
+
+        var snapshot = manager.CreateSnapshot();
+
+        var item = Assert.Single(snapshot.Items);
+        Assert.Equal("scan", item.Source);
+    }
+
     private sealed class FixedClock : IClock
     {
         public DateTimeOffset GetUtcNow() => new(2026, 5, 26, 12, 0, 0, TimeSpan.Zero);

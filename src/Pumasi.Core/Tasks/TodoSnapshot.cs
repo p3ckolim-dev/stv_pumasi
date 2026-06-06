@@ -12,6 +12,7 @@ public sealed record TodoItemSnapshot(
     int Y,
     int Priority,
     string Reason,
+    string Source,
     string? StatusReason)
 {
     public static TodoItemSnapshot FromTask(HelperTask task)
@@ -26,6 +27,7 @@ public sealed record TodoItemSnapshot(
             task.Target.Y,
             task.Priority,
             task.Reason,
+            task.Source,
             task.StatusReason);
     }
 }
